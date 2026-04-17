@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { C, S, MODES, TABS, SCENES, SIZES, WANDER, uid, pick, now, fmtD, fmtT, imgUrl } from './constants.js';
-import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, saveImage, getImage, deleteImage, resizeImage } from './storage.js';
+import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
 import { callGemini, CEN_SYS } from './gemini.js';
 import { memosToCSV, csvToMemos } from './csv.js';
 import CWMode from './CWMode.jsx';
@@ -54,9 +54,39 @@ function SuggestInput({ value, onChange, suggestions, placeholder, style: ext })
 }
 
 /* ═══ Settings modal ═══ */
-function Settings({ onClose }) {
+function Settings({ onClose, onImport }) {
   const [key, setKey] = useState(getApiKey());
+  const [importing, setImporting] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const impRef = useRef(null);
   const save = () => { setApiKey(key); onClose(); };
+
+  const doExport = async () => {
+    const json = await exportAllData();
+    const b = new Blob([json], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `creative-wandering-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setMsg('エクスポート完了');
+  };
+
+  const doImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true); setMsg(null);
+    try {
+      const text = await file.text();
+      const restored = await importAllData(text);
+      onImport(restored);
+      setMsg(`インポート完了（メモ${restored.memos?.length || 0}件）`);
+    } catch (err) {
+      setMsg('エラー: ' + err.message);
+    }
+    setImporting(false);
+    e.target.value = '';
+  };
+
   return (
     <div style={S.overlay} onClick={onClose}>
       <div style={S.modal} onClick={e => e.stopPropagation()}>
@@ -82,6 +112,23 @@ function Settings({ onClose }) {
           </p>
         )}
         <button style={S.pri} onClick={save}>保存する</button>
+
+        {/* ── データ移行 ── */}
+        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 20, paddingTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 8 }}>📦 データ移行</div>
+          <p style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 12 }}>
+            メモ・お題・画像など全データを1つのファイルで別デバイスに移行できます。
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ ...S.pri, flex: 1, background: C.accent2 }} onClick={doExport}>エクスポート ↓</button>
+            <button style={{ ...S.pri, flex: 1, background: C.bg2, color: C.text }} onClick={() => impRef.current?.click()} disabled={importing}>
+              {importing ? '読込中...' : 'インポート ↑'}
+            </button>
+            <input ref={impRef} type="file" accept=".json" style={{ display: 'none' }} onChange={doImport} />
+          </div>
+          {msg && <p style={{ fontSize: 12, color: msg.startsWith('エラー') ? '#D07070' : '#22C55E', marginTop: 8 }}>{msg}</p>}
+        </div>
+
         <div style={{ height: 'env(safe-area-inset-bottom, 8px)' }} />
       </div>
     </div>
@@ -804,7 +851,7 @@ export default function App() {
       </div>
 
       {/* ── settings modal ── */}
-      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} onImport={(restored) => save(restored)} />}
     </div>
   );
 }

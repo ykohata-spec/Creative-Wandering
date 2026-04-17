@@ -96,6 +96,45 @@ export async function deleteImage(id) {
   } catch {}
 }
 
+/* ─── Full export / import (data + images) ─── */
+function getAllImages() {
+  return new Promise(async (res) => {
+    try {
+      const db = await openDB();
+      const tx = db.transaction(IDB.store, 'readonly');
+      const req = tx.objectStore(IDB.store).getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => res([]);
+    } catch { res([]); }
+  });
+}
+
+export async function exportAllData() {
+  const data = loadData();
+  const images = await getAllImages();
+  return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data, images }, null, 2);
+}
+
+export async function importAllData(json) {
+  const parsed = JSON.parse(json);
+  if (!parsed.data) throw new Error('無効なファイル形式です');
+  // restore localStorage data
+  saveData(parsed.data);
+  // restore images to IndexedDB
+  if (parsed.images?.length > 0) {
+    const db = await openDB();
+    for (const img of parsed.images) {
+      await new Promise((res, rej) => {
+        const tx = db.transaction(IDB.store, 'readwrite');
+        tx.objectStore(IDB.store).put(img);
+        tx.oncomplete = () => res();
+        tx.onerror = (e) => rej(e.target.error);
+      });
+    }
+  }
+  return parsed.data;
+}
+
 /* ─── Image resize/compress ─── */
 export function resizeImage(file, maxW = 1200, maxH = 1200, q = 0.85) {
   return new Promise((res) => {
