@@ -648,8 +648,12 @@ function ChatTab({ data, save }) {
 }
 
 /* ═══ InsightTab ═══ */
-function InsightTab({ data }) {
+function InsightTab({ data, save }) {
   const sp = data.sparks;
+  const [filter, setFilter] = useState('all');
+  const [openSpark, setOpenSpark] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [confirmDel, setConfirmDel] = useState(false);
   const hd = Array.from({ length: 24 }, (_, h) => ({ h, c: sp.filter(s => s.hour === h).length }));
   const mH = Math.max(...hd.map(d => d.c), 1);
   const sm = {}; sp.forEach(s => { if (s.scene) sm[s.scene] = (sm[s.scene] || 0) + 1; });
@@ -658,11 +662,24 @@ function InsightTab({ data }) {
   const sc = { big: 0, middle: 0, small: 0 };
   sp.forEach(s => { if (s.size) sc[s.size]++; });
 
+  const filtered = filter === 'all' ? sp : sp.filter(s => s.size === filter);
+  const sizeInfo = { big: { e: '🔥', c: '#E05252', l: 'BIG' }, middle: { e: '✨', c: '#E0A030', l: 'MID' }, small: { e: '💫', c: '#4A90D9', l: 'SM' } };
+
   const expCSV = () => {
     const h = 'ID,内容,サイズ,シーン,時間,日時\n';
     const r = sp.map(s => [s.id, s.content || '', s.size || '', s.scene || '', s.hour, s.createdAt].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const b = new Blob([h + r], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'sparks.csv'; a.click();
+  };
+
+  const deleteSpark = (id) => {
+    save({ ...data, sparks: data.sparks.filter(s => s.id !== id) });
+    setOpenSpark(null); setConfirmDel(false);
+  };
+
+  const updateSpark = (id, newContent) => {
+    save({ ...data, sparks: data.sparks.map(s => s.id === id ? { ...s, content: newContent } : s) });
+    setOpenSpark(null);
   };
 
   if (sp.length === 0) return (
@@ -707,6 +724,99 @@ function InsightTab({ data }) {
           ))}
         </div>
       )}
+
+      {/* ── ひらめき一覧 ── */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={S.sec}>💡 ひらめき一覧 <span style={{ fontSize: 13, color: C.sub, fontWeight: 400 }}>({filtered.length}件)</span></h3>
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setFilter('all')}
+            style={{ ...S.chip, background: filter === 'all' ? C.accent + '18' : '#fff', color: filter === 'all' ? C.accent : C.sub, borderColor: filter === 'all' ? C.accent : C.border }}
+          >
+            すべて
+          </button>
+          {SIZES.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setFilter(filter === s.id ? 'all' : s.id)}
+              style={{ ...S.chip, background: filter === s.id ? s.c : '#fff', color: filter === s.id ? '#fff' : C.sub, borderColor: filter === s.id ? s.c : C.border }}
+            >
+              {s.e} {s.l}
+            </button>
+          ))}
+        </div>
+        {filtered.slice().reverse().map(s => {
+          const si = s.size && sizeInfo[s.size];
+          return (
+            <div
+              key={s.id}
+              style={{ ...S.card, marginBottom: 8, padding: 14, cursor: 'pointer', borderLeft: si ? `3px solid ${si.c}` : `3px solid ${C.border}` }}
+              onClick={() => { setOpenSpark(s); setEditText(s.content || ''); setConfirmDel(false); }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, color: C.text, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{s.content || '（内容なし）'}</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {si && <span style={{ fontSize: 11, color: '#fff', background: si.c, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>{si.e} {si.l}</span>}
+                    {s.scene && <span style={{ ...S.tgSm, color: C.accent2 }}>{s.scene}</span>}
+                    <span style={{ fontSize: 10, color: C.sub }}>{fmtD(s.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '24px 16px', color: C.sub, fontSize: 13 }}>
+            該当するひらめきがありません
+          </div>
+        )}
+      </div>
+
+      {/* ── ひらめき詳細モーダル ── */}
+      {openSpark && (
+        <div style={S.overlay} onClick={() => setOpenSpark(null)}>
+          <div style={{ ...S.modal, maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '0 auto 14px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>💡 ひらめき詳細</span>
+              <button style={S.iconBtn} onClick={() => setOpenSpark(null)}>✕</button>
+            </div>
+            <textarea
+              style={{ ...S.inp, minHeight: 100 }}
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+            />
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+              {openSpark.size && sizeInfo[openSpark.size] && (
+                <span style={{ fontSize: 12, color: '#fff', background: sizeInfo[openSpark.size].c, padding: '3px 10px', borderRadius: 10, fontWeight: 600 }}>
+                  {sizeInfo[openSpark.size].e} {sizeInfo[openSpark.size].l}
+                </span>
+              )}
+              {openSpark.scene && <span style={{ ...S.tgSm, fontSize: 12, padding: '3px 8px', color: C.accent2 }}>{openSpark.scene}</span>}
+              <span style={{ fontSize: 11, color: C.sub }}>{fmtD(openSpark.createdAt)}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{ ...S.pri, flex: 1 }}
+                onClick={() => updateSpark(openSpark.id, editText.trim())}
+                disabled={editText.trim() === (openSpark.content || '')}
+              >
+                保存する
+              </button>
+            </div>
+            <button
+              style={{ ...S.txtBtn, fontSize: 11, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
+              onClick={() => confirmDel ? deleteSpark(openSpark.id) : setConfirmDel(true)}
+            >
+              {confirmDel ? '本当に削除する' : 'このひらめきを削除'}
+            </button>
+            <div style={{ height: 'env(safe-area-inset-bottom, 8px)' }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -739,7 +849,7 @@ function CENMode({ data, save }) {
         {tab === TABS.MEMO    && <MemoTab    data={data} save={save} />}
         {tab === TABS.PROJ    && <ProjTab    data={data} save={save} />}
         {tab === TABS.CHAT    && <ChatTab    data={data} save={save} />}
-        {tab === TABS.INSIGHT && <InsightTab data={data} />}
+        {tab === TABS.INSIGHT && <InsightTab data={data} save={save} />}
       </div>
       <button style={S.fab} onClick={() => setShowM(true)}>💡</button>
       {showM && <QuickMemo onSave={addSpark} onClose={() => setShowM(false)} />}
