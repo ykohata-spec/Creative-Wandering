@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { callGemini, CW_MEMO_SYS, CW_NEAR_SYS, CW_MID_SYS, CW_FAR_SYS } from './gemini.js';
+import { callGemini, CW_MEMO_SYS, CW_STIM_SYS } from './gemini.js';
 import { getApiKey, getImage } from './storage.js';
 import QuickMemo from './QuickMemo.jsx';
 
@@ -94,7 +94,7 @@ export default function CWMode({ data, save }) {
     }
   };
 
-  /* ── 生成（4つの距離プールを順次生成） ── */
+  /* ── 生成（2回のAPI呼び出しで全プール生成） ── */
   const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
   const callWithRetry = async (apiKey, sys, msg, label) => {
@@ -124,27 +124,25 @@ export default function CWMode({ data, save }) {
       : '\n\nメモ箱: (空)';
 
     try {
-      setLoadMsg('メモを解析中…(1/4)');
+      setLoadMsg('メモを解析中…(1/2)');
       const r1 = await callWithRetry(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx, 'memo');
 
       await delay(2000);
-      setLoadMsg('近い刺激を生成中…(2/4)');
-      const r2 = await callWithRetry(apiKey, CW_NEAR_SYS, 'お題: ' + topic, 'near');
-
-      await delay(2000);
-      setLoadMsg('やや遠い刺激を生成中…(3/4)');
-      const r3 = await callWithRetry(apiKey, CW_MID_SYS, 'お題: ' + topic, 'mid');
-
-      await delay(2000);
-      setLoadMsg('遠い刺激を生成中…(4/4)');
-      const r4 = await callWithRetry(apiKey, CW_FAR_SYS, 'お題: ' + topic, 'far');
+      setLoadMsg('3距離の刺激を一括生成中…(2/2)');
+      const r2 = await callWithRetry(apiKey, CW_STIM_SYS, 'お題: ' + topic, 'stim');
 
       setLoadMsg('空間を構築中…');
 
       const memo = tryParse(r1, 'memo').map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
-      const near = tryParse(r2, 'near').map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
-      const mid  = tryParse(r3, 'mid').map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
-      const far  = tryParse(r4, 'far').map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
+
+      const stimRaw = tryParse(r2, 'stim');
+      const nearRaw = Array.isArray(stimRaw) ? stimRaw : (stimRaw.near || []);
+      const midRaw  = Array.isArray(stimRaw) ? [] : (stimRaw.mid || []);
+      const farRaw  = Array.isArray(stimRaw) ? [] : (stimRaw.far || []);
+
+      const near = nearRaw.map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
+      const mid  = midRaw.map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
+      const far  = farRaw.map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
 
       const { laid: viewNear, np: posNear, cx, cy } = doLayout([...memo, ...near]);
       const { laid: viewMid,  np: posMid }           = doLayout([...memo, ...mid]);
