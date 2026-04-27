@@ -1,14 +1,21 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { callGemini, CW_SYS } from './gemini.js';
+import { callGemini, CW_MEMO_SYS, CW_NEAR_SYS, CW_MID_SYS, CW_FAR_SYS } from './gemini.js';
 import { getApiKey, getImage } from './storage.js';
 import QuickMemo from './QuickMemo.jsx';
 
-const GROUP_STYLE = {
-  internal: { bg: '#EEFFC2', border: '#8BBE2C', color: '#4A7010' },
-  external: { bg: '#EDE5FF', border: '#6E5DC6', color: '#4C3D9E' },
-  image:    { bg: '#FFF5E6', border: '#D4956A', color: '#7A4A20' },
+const GROUP_COLORS = {
+  1: { bg: '#EEFFC2', border: '#8BBE2C', color: '#5A8010' },
+  2: { bg: '#DBEAFE', border: '#3B82F6', color: '#2563EB' },
+  3: { bg: '#FFF3D0', border: '#F59E0B', color: '#D97706' },
+  4: { bg: '#EDE5FF', border: '#6E5DC6', color: '#5B4AA8' },
 };
+
+const DIST_INFO = [
+  { l: '近い',     c: '#3B82F6', desc: '同カテゴリ・関連トレンド' },
+  { l: 'やや遠い', c: '#F59E0B', desc: '異業種・感覚的に繋がる' },
+  { l: '遠い',     c: '#6E5DC6', desc: '抽象概念・メタファー' },
+];
 
 /* ── 画像ノード用コンポーネント ── */
 function ImageNode({ imageId, text }) {
@@ -30,107 +37,126 @@ function ImageNode({ imageId, text }) {
 }
 
 export default function CWMode({ data, save }) {
-  const [nodes,    setNodes]    = useState([]);
-  const [pos,      setPos]      = useState({});
-  const [sizes,    setSizes]    = useState({});        /* nodeId → scale数値 */
-  const [pan,      setPan]      = useState({ x: 0, y: 0 });
-  const [loading,  setLoading]  = useState(false);
-  const [topic,    setTopic]    = useState(data.projects[data.projects.length - 1]?.title || '');
-  const [showM,    setShowM]    = useState(false);
-  const [showHist, setShowHist] = useState(false);
-  const [sideOpen, setSideOpen] = useState(false);
-  const [drag,     setDrag]     = useState(null);
-  const [off,      setOff]      = useState({ x: 0, y: 0 });
-  const [panStart, setPanStart] = useState(null);     /* キャンバスパン開始情報 */
+  const [memoNodes, setMemoNodes] = useState([]);
+  const [pools,     setPools]     = useState({ near: [], mid: [], far: [] });
+  const [pos,       setPos]       = useState({});
+  const [sizes,     setSizes]     = useState({});
+  const [pan,       setPan]       = useState({ x: 0, y: 0 });
+  const [loading,   setLoading]   = useState(false);
+  const [loadMsg,   setLoadMsg]   = useState('');
+  const [topic,     setTopic]     = useState(data.projects[data.projects.length - 1]?.title || '');
+  const [showM,     setShowM]     = useState(false);
+  const [showHist,  setShowHist]  = useState(false);
+  const [sideOpen,  setSideOpen]  = useState(false);
+  const [drag,      setDrag]      = useState(null);
+  const [off,       setOff]       = useState({ x: 0, y: 0 });
+  const [panStart,  setPanStart]  = useState(null);
+  const [dist,      setDist]      = useState(0);
   const canvasRef = useRef(null);
   const history   = data.cwHistory || [];
 
+  const stimNodes = [pools.near, pools.mid, pools.far][dist] || [];
+  const visibleNodes = useMemo(() => [...memoNodes, ...stimNodes], [memoNodes, stimNodes]);
+  const hasData = memoNodes.length > 0 || pools.near.length > 0;
+
   /* ── レイアウト ── */
-  const buildPositions = useCallback((nodeList) => {
+  const doLayout = useCallback((nodeList) => {
     const cw = canvasRef.current?.clientWidth  || 900;
     const ch = canvasRef.current?.clientHeight || 700;
-    const cx = Math.max(cw, 1100) / 2;
-    const cy = Math.max(ch,  900) / 2;
-    const total  = nodeList.length;
+    const W = Math.max(cw, 1200);
+    const H = Math.max(ch, 1000);
+    const cx = W / 2;
+    const cy = H / 2;
+    const total = nodeList.length;
     const golden = Math.PI * (3 - Math.sqrt(5));
-    const np = { __t: { x: cx - 80, y: cy - 16 } };
-    nodeList.forEach((n, i) => {
-      const isNear = n.group === 'internal' || n.group === 'image';
-      const angle = i * golden + Math.random() * 0.3;
-      const minR  = isNear ? 100 : 200;
-      const maxR  = isNear ? 220 : Math.min(cx, cy) * 0.82;
-      const r     = minR + (maxR - minR) * Math.sqrt((i + 1) / total) * (0.9 + Math.random() * 0.2);
-      np[n.id] = {
-        x: Math.max(8, cx + Math.cos(angle) * r - 60),
-        y: Math.max(8, cy + Math.sin(angle) * r - 14),
+    const np = {};
+    const laid = nodeList.map((n, i) => {
+      const id = n.id || uid();
+      const a = i * golden + Math.random() * 0.4;
+      const maxR = Math.min(W, H) * 0.44;
+      const r = 60 + maxR * Math.sqrt((i + 1) / total) * (0.9 + Math.random() * 0.2);
+      np[id] = {
+        x: Math.max(10, cx + Math.cos(a) * r - 60),
+        y: Math.max(10, cy + Math.sin(a) * r - 12),
       };
+      return { ...n, id, _anim: n._anim ?? i % 6, _dur: n._dur ?? (8 + Math.random() * 12), _delay: n._delay ?? (Math.random() * -20) };
     });
-    return np;
+    return { laid, np, cx, cy };
   }, []);
 
-  /* ── 生成 ── */
+  const tryParse = (text) => {
+    try {
+      const cl = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(cl);
+    } catch { return []; }
+  };
+
+  /* ── 生成（4つの距離プールを順次生成） ── */
   const gen = async () => {
     if (!topic.trim()) return;
     setLoading(true);
     setSizes({});
     setPan({ x: 0, y: 0 });
 
+    const apiKey = getApiKey();
     const memoCtx = data.memos.length > 0
-      ? '\n\nユーザーのメモ箱:\n' + data.memos.map(m => `[ID:${m.id}] ${m.title ? m.title + ': ' : ''}${m.content}`).join('\n')
-      : '\n\nユーザーのメモ箱: (空)';
-
-    const res = await callGemini(getApiKey(), CW_SYS, `お題: ${topic}${memoCtx}`, true);
-
-    /* API自体がエラー文字列を返した場合 */
-    if (typeof res === 'string' && (res.startsWith('APIエラー') || res.startsWith('接続エラー') || res.startsWith('⚠️'))) {
-      const errNode = [{ id: uid(), text: res, group: 'external', _anim: 0, _dur: 10, _delay: 0 }];
-      setNodes(errNode);
-      setPos(buildPositions(errNode));
-      setLoading(false);
-      return;
-    }
+      ? '\n\nメモ箱:\n' + data.memos.map(m => `[${m.tag || ''}] ${m.title || ''}: ${m.content}`).join('\n')
+      : '\n\nメモ箱: (空)';
 
     try {
-      const clean  = res.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const parsed = JSON.parse(clean);
+      setLoadMsg('メモを解析中…(1/4)');
+      const r1 = await callGemini(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx, true);
 
-      const internalNodes = (parsed.internal_words || []).map((w, i) => ({
-        id: uid(), text: w.text || w, group: 'internal', sourceId: w.id || null,
-        _anim: i % 6, _dur: 10 + Math.random() * 8, _delay: Math.random() * -20,
-      }));
-      const externalNodes = (parsed.external_words || []).map((w, i) => ({
-        id: uid(), text: typeof w === 'string' ? w : w.text || '', group: 'external',
-        _anim: i % 6, _dur: 12 + Math.random() * 10, _delay: Math.random() * -20,
-      }));
+      setLoadMsg('近い刺激を生成中…(2/4)');
+      const r2 = await callGemini(apiKey, CW_NEAR_SYS, 'お題: ' + topic, true);
 
-      /* 画像メモをランダムで最大5件追加 */
-      const usedIds = new Set(internalNodes.map(n => n.sourceId).filter(Boolean));
-      const imageMemos = data.memos
-        .filter(m => m.imageId && !usedIds.has(m.id))
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 5);
-      const imageNodes = imageMemos.map((m, i) => ({
-        id: uid(),
-        text: m.title || m.content.substring(0, 12) || '画像',
-        group: 'image',
-        imageId: m.imageId,
-        _anim: i % 6, _dur: 14 + Math.random() * 8, _delay: Math.random() * -20,
-      }));
+      setLoadMsg('やや遠い刺激を生成中…(3/4)');
+      const r3 = await callGemini(apiKey, CW_MID_SYS, 'お題: ' + topic, true);
 
-      const allNodes = [...internalNodes, ...externalNodes, ...imageNodes];
-      setNodes(allNodes);
-      setPos(buildPositions(allNodes));
+      setLoadMsg('遠い刺激を生成中…(4/4)');
+      const r4 = await callGemini(apiKey, CW_FAR_SYS, 'お題: ' + topic, true);
 
-      const entry   = { id: uid(), topic: topic.trim(), nodes: allNodes, createdAt: now() };
-      const newHist = [entry, ...history].slice(0, 10);
-      save({ ...data, cwHistory: newHist });
+      setLoadMsg('空間を構築中…');
+
+      const memo = tryParse(r1).map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
+      const near = tryParse(r2).map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
+      const mid  = tryParse(r3).map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
+      const far  = tryParse(r4).map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
+
+      const { laid: viewNear, np: posNear, cx, cy } = doLayout([...memo, ...near]);
+      const { laid: viewMid,  np: posMid }           = doLayout([...memo, ...mid]);
+      const { laid: viewFar,  np: posFar }           = doLayout([...memo, ...far]);
+
+      const memoLaid = viewNear.filter(n => n.group === 1);
+      const stimNear = viewNear.filter(n => n.group === 2);
+      const stimMid  = viewMid.filter(n => n.group === 3);
+      const stimFar  = viewFar.filter(n => n.group === 4);
+
+      setMemoNodes(memoLaid);
+      setPools({
+        near: stimNear, nearPos: posNear,
+        mid:  stimMid,  midPos:  posMid,
+        far:  stimFar,  farPos:  posFar,
+      });
+      setPos({ ...posNear, __t: { x: cx - 100, y: cy - 14 } });
+      setDist(0);
+
+      const entry = { id: uid(), topic: topic.trim(), memo, near, mid, far, createdAt: now() };
+      save({ ...data, cwHistory: [entry, ...history].slice(0, 10) });
     } catch (e) {
-      console.error('CW parse error', e, res);
-      const errNode = [{ id: uid(), text: `JSON解析エラー: ${e.message}`, group: 'external', _anim: 0, _dur: 10, _delay: 0 }];
-      setNodes(errNode);
-      setPos(buildPositions(errNode));
+      console.error('CW gen error:', e);
+      setMemoNodes([{ id: uid(), text: '生成失敗。再試行してください。', group: 1, _anim: 0, _dur: 15, _delay: 0 }]);
     }
     setLoading(false);
+    setLoadMsg('');
+  };
+
+  /* ── 距離切り替え ── */
+  const switchDist = (level) => {
+    const poolPos = [pools.nearPos, pools.midPos, pools.farPos][level];
+    if (!poolPos) return;
+    setDist(level);
+    setPos(prev => ({ ...poolPos, __t: prev.__t || { x: 400, y: 300 } }));
   };
 
   /* ── 履歴復元 ── */
@@ -138,11 +164,32 @@ export default function CWMode({ data, save }) {
     setTopic(entry.topic);
     setSizes({});
     setPan({ x: 0, y: 0 });
-    const restoredNodes = entry.nodes.map((n, i) =>
-      n._anim != null ? n : { ...n, _anim: i % 6, _dur: 10 + i * 0.4, _delay: -i * 1.2 }
-    );
-    setNodes(restoredNodes);
-    setPos(buildPositions(restoredNodes));
+
+    if (entry.memo) {
+      const memo = (entry.memo || []).map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
+      const near = (entry.near || []).map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
+      const mid  = (entry.mid  || []).map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
+      const far  = (entry.far  || []).map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
+      const { laid: vn, np: pn, cx, cy } = doLayout([...memo, ...near]);
+      const { laid: vm, np: pm }         = doLayout([...memo, ...mid]);
+      const { laid: vf, np: pf }         = doLayout([...memo, ...far]);
+      setMemoNodes(vn.filter(n => n.group === 1));
+      setPools({
+        near: vn.filter(n => n.group === 2), nearPos: pn,
+        mid:  vm.filter(n => n.group === 3), midPos:  pm,
+        far:  vf.filter(n => n.group === 4), farPos:  pf,
+      });
+      setPos({ ...pn, __t: { x: cx - 100, y: cy - 14 } });
+    } else if (entry.nodes) {
+      const restoredNodes = entry.nodes.map((n, i) =>
+        n._anim != null ? n : { ...n, _anim: i % 6, _dur: 10 + i * 0.4, _delay: -i * 1.2 }
+      );
+      setMemoNodes(restoredNodes);
+      setPools({ near: [], mid: [], far: [] });
+      const { np } = doLayout(restoredNodes);
+      setPos(np);
+    }
+    setDist(0);
     setShowHist(false);
   };
 
@@ -161,7 +208,7 @@ export default function CWMode({ data, save }) {
     setDrag(id);
     setOff({ x: e.clientX - p.x - pan.x, y: e.clientY - p.y - pan.y });
     e.preventDefault();
-    e.stopPropagation(); /* キャンバスパンを起動させない */
+    e.stopPropagation();
   };
 
   const onMouseMove = (e) => {
@@ -177,7 +224,6 @@ export default function CWMode({ data, save }) {
 
   const endAll = () => { setDrag(null); setPanStart(null); };
 
-  /* ── キャンバスパン ── */
   const startCanvasPan = (e) => {
     setPanStart({ mouseX: e.clientX, mouseY: e.clientY, panX: pan.x, panY: pan.y });
   };
@@ -197,7 +243,6 @@ export default function CWMode({ data, save }) {
   };
 
   const addSpark = (sp) => save({ ...data, sparks: [...data.sparks, sp] });
-
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 680;
 
   return (
@@ -225,31 +270,64 @@ export default function CWMode({ data, save }) {
           <div style={{ fontSize: 17, fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>Cloud Synapse</div>
           <div style={{ fontSize: 11, color: C.sub, marginBottom: 14 }}>Creative Wandering 空間</div>
 
-          {[
-            { c: C.accent,  label: '私のメモから' },
-            { c: C.accent2, label: 'Deep Research' },
-            { c: '#D4956A', label: '画像メモ' },
-          ].map(({ c, label }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 11, color: C.sub }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: c, flexShrink: 0, display: 'inline-block' }} />
-              {label}
+          {/* 距離パラメータ */}
+          {hasData && (
+            <div style={{ background: C.bg2, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 10 }}>距離パラメータ</div>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                {DIST_INFO.map((d, i) => (
+                  <button
+                    key={i}
+                    onClick={() => switchDist(i)}
+                    style={{
+                      flex: 1, padding: '8px 4px', borderRadius: 8,
+                      border: `1.5px solid ${dist === i ? d.c : C.border}`,
+                      background: dist === i ? d.c + '15' : '#fff',
+                      color: dist === i ? d.c : C.sub,
+                      fontSize: 11, fontWeight: dist === i ? 700 : 400,
+                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+                    }}
+                  >
+                    {d.l}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 10, color: C.textLight, lineHeight: 1.5, textAlign: 'center' }}>
+                {DIST_INFO[dist].desc}
+              </div>
+              <div style={{ fontSize: 10, color: C.sub, textAlign: 'center', marginTop: 4 }}>
+                メモ {memoNodes.length} + 刺激 {stimNodes.length} 表示中
+              </div>
+              <div style={{ fontSize: 9, color: C.sub, textAlign: 'center', marginTop: 2 }}>
+                [近{pools.near?.length || 0} / やや遠{pools.mid?.length || 0} / 遠{pools.far?.length || 0}]
+              </div>
             </div>
-          ))}
+          )}
 
-          <div style={{ fontSize: 10, color: C.sub, marginTop: 6, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
+          {/* 凡例 */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />お題（中心）</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#8BBE2C', flexShrink: 0 }} />記憶・メモ — 常に表示</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', flexShrink: 0 }} />近い — 直接関連・トレンド</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />やや遠い — 異業種・構造類似</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#6E5DC6', flexShrink: 0 }} />遠い — 抽象・メタファー</div>
+          </div>
+
+          <div style={{ fontSize: 10, color: C.sub, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
           <div style={{ fontSize: 10, color: C.sub, marginBottom: 14 }}>🖐 背景ドラッグでスクロール</div>
 
+          {/* 履歴 */}
           {history.length > 0 && (
             <div style={{ marginBottom: 8 }}>
               <button style={{ ...S.txtBtn, fontSize: 11, color: C.accent }} onClick={() => setShowHist(!showHist)}>
                 📂 過去の空間 ({history.length}) {showHist ? '▲' : '▼'}
               </button>
               {showHist && (
-                <div style={{ marginTop: 8, maxHeight: 160, overflowY: 'auto' }}>
+                <div style={{ marginTop: 8, maxHeight: 150, overflowY: 'auto' }}>
                   {history.map(h => (
                     <div key={h.id} style={{ padding: '8px 0', borderBottom: `1px solid ${C.border}`, cursor: 'pointer' }} onClick={() => loadHist(h)}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{h.topic}</div>
-                      <div style={{ fontSize: 10, color: C.sub }}>{fmtD(h.createdAt)} · {h.nodes.length}語</div>
+                      <div style={{ fontSize: 10, color: C.sub }}>{fmtD(h.createdAt)}</div>
                     </div>
                   ))}
                 </div>
@@ -260,7 +338,7 @@ export default function CWMode({ data, save }) {
           <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, marginTop: 'auto' }}>
             <div style={{ fontSize: 11, color: C.sub, marginBottom: 6 }}>❶ お題をセット</div>
             <textarea
-              style={{ ...S.inp, minHeight: 64, fontSize: 13 }}
+              style={{ ...S.inp, minHeight: 60, fontSize: 13 }}
               placeholder="思考の種を入力..."
               value={topic}
               onChange={e => setTopic(e.target.value)}
@@ -295,7 +373,7 @@ export default function CWMode({ data, save }) {
         )}
 
         {/* トピックラベル */}
-        {nodes.length > 0 && pos.__t && (
+        {hasData && pos.__t && (
           <div
             onMouseDown={e => startDrag('__t', e)}
             onTouchStart={e => startTouch('__t', e)}
@@ -319,13 +397,12 @@ export default function CWMode({ data, save }) {
         )}
 
         {/* ノード */}
-        {nodes.map((n) => {
+        {visibleNodes.map((n) => {
           const p = pos[n.id]; if (!p) return null;
-          const gs    = GROUP_STYLE[n.group] || GROUP_STYLE.external;
+          const gc = GROUP_COLORS[n.group] || GROUP_COLORS[2];
           const scale = sizes[n.id] || 1;
-          const isImg = n.group === 'image';
+          const isImg = n.group === 1 && n.imageId;
           return (
-            /* 外側div: 位置・ドラッグ・アニメーション */
             <div
               key={n.id}
               onMouseDown={e => startDrag(n.id, e)}
@@ -336,21 +413,19 @@ export default function CWMode({ data, save }) {
                 left: p.x + pan.x,
                 top:  p.y + pan.y,
                 animation: drag === n.id ? 'none' : `cwFloat${n._anim} ${n._dur}s ease-in-out ${n._delay}s infinite`,
-                zIndex: drag === n.id ? 10 : 2,
+                zIndex: drag === n.id ? 10 : n.group === 1 ? 3 : 2,
                 cursor: drag === n.id ? 'grabbing' : 'grab',
                 userSelect: 'none',
                 touchAction: 'none',
               }}
-              title={isImg ? '画像メモ（ダブルクリックでサイズ変更）' : n.group === 'internal' ? 'メモから引用' : 'AI生成'}
             >
-              {/* 内側div: 見た目・スケール（アニメーションのtransformと分離） */}
               <div style={{
                 padding: isImg ? '8px' : '8px 16px',
-                background: gs.bg,
-                border: `1.5px solid ${gs.border}`,
+                background: gc.bg,
+                border: `1.5px solid ${gc.border}`,
                 borderRadius: isImg ? 12 : 20,
-                fontSize: 13, fontWeight: 600, color: gs.color,
-                boxShadow: `0 2px 8px ${gs.border}30`,
+                fontSize: 13, fontWeight: 600, color: gc.color,
+                boxShadow: `0 2px 8px ${gc.border}30`,
                 whiteSpace: 'normal',
                 maxWidth: isImg ? undefined : 360,
                 lineHeight: 1.5,
@@ -362,12 +437,7 @@ export default function CWMode({ data, save }) {
                 {isImg ? (
                   <ImageNode imageId={n.imageId} text={n.text} />
                 ) : (
-                  <>
-                    {n.text}
-                    {n.group === 'internal' && (
-                      <span style={{ fontSize: 9, marginLeft: 4, opacity: 0.6 }}>📌</span>
-                    )}
-                  </>
+                  <span>{n.text}</span>
                 )}
               </div>
             </div>
@@ -375,7 +445,7 @@ export default function CWMode({ data, save }) {
         })}
 
         {/* 空状態 */}
-        {nodes.length === 0 && !loading && (
+        {!hasData && !loading && (
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', color: C.sub }}>
             <div style={{ fontSize: 52, marginBottom: 12, opacity: 0.25 }}>☁️</div>
             <p style={{ fontSize: 14 }}>お題をセットして空間を生成してください</p>
@@ -385,7 +455,7 @@ export default function CWMode({ data, save }) {
         {loading && (
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
             <div style={{ fontSize: 14, color: C.accent, animation: 'cwPulse 1.5s ease-in-out infinite' }}>
-              Deep Research 実行中…
+              {loadMsg || '生成中…'}
             </div>
           </div>
         )}
