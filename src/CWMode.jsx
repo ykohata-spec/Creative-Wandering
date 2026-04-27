@@ -84,14 +84,32 @@ export default function CWMode({ data, save }) {
     return { laid, np, cx, cy };
   }, []);
 
-  const tryParse = (text) => {
+  const tryParse = (text, label) => {
     try {
       const cl = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       return JSON.parse(cl);
-    } catch { return []; }
+    } catch (e) {
+      console.warn(`CW parse failed [${label}]:`, e.message, '\nRaw:', text?.substring(0, 200));
+      return [];
+    }
   };
 
   /* ── 生成（4つの距離プールを順次生成） ── */
+  const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+  const callWithRetry = async (apiKey, sys, msg) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await callGemini(apiKey, sys, msg, true);
+      if (typeof res === 'string' && (res.startsWith('APIエラー') || res.startsWith('接続エラー'))) {
+        console.warn(`CW API retry ${attempt + 1}:`, res);
+        await delay(2000 * (attempt + 1));
+        continue;
+      }
+      return res;
+    }
+    return '[]';
+  };
+
   const gen = async () => {
     if (!topic.trim()) return;
     setLoading(true);
@@ -105,23 +123,26 @@ export default function CWMode({ data, save }) {
 
     try {
       setLoadMsg('メモを解析中…(1/4)');
-      const r1 = await callGemini(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx, true);
+      const r1 = await callWithRetry(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx);
 
+      await delay(1500);
       setLoadMsg('近い刺激を生成中…(2/4)');
-      const r2 = await callGemini(apiKey, CW_NEAR_SYS, 'お題: ' + topic, true);
+      const r2 = await callWithRetry(apiKey, CW_NEAR_SYS, 'お題: ' + topic);
 
+      await delay(1500);
       setLoadMsg('やや遠い刺激を生成中…(3/4)');
-      const r3 = await callGemini(apiKey, CW_MID_SYS, 'お題: ' + topic, true);
+      const r3 = await callWithRetry(apiKey, CW_MID_SYS, 'お題: ' + topic);
 
+      await delay(1500);
       setLoadMsg('遠い刺激を生成中…(4/4)');
-      const r4 = await callGemini(apiKey, CW_FAR_SYS, 'お題: ' + topic, true);
+      const r4 = await callWithRetry(apiKey, CW_FAR_SYS, 'お題: ' + topic);
 
       setLoadMsg('空間を構築中…');
 
-      const memo = tryParse(r1).map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
-      const near = tryParse(r2).map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
-      const mid  = tryParse(r3).map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
-      const far  = tryParse(r4).map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
+      const memo = tryParse(r1, 'memo').map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
+      const near = tryParse(r2, 'near').map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
+      const mid  = tryParse(r3, 'mid').map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
+      const far  = tryParse(r4, 'far').map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
 
       const { laid: viewNear, np: posNear, cx, cy } = doLayout([...memo, ...near]);
       const { laid: viewMid,  np: posMid }           = doLayout([...memo, ...mid]);
