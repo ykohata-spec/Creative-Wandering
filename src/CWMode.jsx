@@ -99,7 +99,7 @@ export default function CWMode({ data, save }) {
 
   const callWithRetry = async (apiKey, sys, msg, label) => {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const res = await callGemini(apiKey, sys, msg, true);
+      const res = await callGemini(apiKey, sys, msg, true, true);
       const trimmed = typeof res === 'string' ? res.trim() : '';
       if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) {
         console.warn(`CW API [${label}] attempt ${attempt + 1} failed:`, res?.substring?.(0, 200));
