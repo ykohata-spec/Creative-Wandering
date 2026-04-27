@@ -17,7 +17,9 @@ export async function callGemini(apiKey, sys, msg, jsonMode = false) {
     });
     const d = await r.json();
     if (d.error) return `APIエラー: ${d.error.message}`;
-    return d.candidates?.[0]?.content?.parts?.[0]?.text || '応答を取得できませんでした。';
+    const parts = d.candidates?.[0]?.content?.parts || [];
+    const textPart = parts.filter(p => !p.thought).pop();
+    return textPart?.text || '応答を取得できませんでした。';
   } catch (e) {
     return `接続エラー: ${e.message}`;
   }

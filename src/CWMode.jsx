@@ -97,16 +97,18 @@ export default function CWMode({ data, save }) {
   /* ── 生成（4つの距離プールを順次生成） ── */
   const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
-  const callWithRetry = async (apiKey, sys, msg) => {
+  const callWithRetry = async (apiKey, sys, msg, label) => {
     for (let attempt = 0; attempt < 3; attempt++) {
       const res = await callGemini(apiKey, sys, msg, true);
-      if (typeof res === 'string' && (res.startsWith('APIエラー') || res.startsWith('接続エラー'))) {
-        console.warn(`CW API retry ${attempt + 1}:`, res);
-        await delay(2000 * (attempt + 1));
+      const trimmed = typeof res === 'string' ? res.trim() : '';
+      if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) {
+        console.warn(`CW API [${label}] attempt ${attempt + 1} failed:`, res?.substring?.(0, 200));
+        await delay(3000 * (attempt + 1));
         continue;
       }
       return res;
     }
+    console.error(`CW API [${label}] all retries exhausted`);
     return '[]';
   };
 
@@ -123,19 +125,19 @@ export default function CWMode({ data, save }) {
 
     try {
       setLoadMsg('メモを解析中…(1/4)');
-      const r1 = await callWithRetry(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx);
+      const r1 = await callWithRetry(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx, 'memo');
 
-      await delay(1500);
+      await delay(2000);
       setLoadMsg('近い刺激を生成中…(2/4)');
-      const r2 = await callWithRetry(apiKey, CW_NEAR_SYS, 'お題: ' + topic);
+      const r2 = await callWithRetry(apiKey, CW_NEAR_SYS, 'お題: ' + topic, 'near');
 
-      await delay(1500);
+      await delay(2000);
       setLoadMsg('やや遠い刺激を生成中…(3/4)');
-      const r3 = await callWithRetry(apiKey, CW_MID_SYS, 'お題: ' + topic);
+      const r3 = await callWithRetry(apiKey, CW_MID_SYS, 'お題: ' + topic, 'mid');
 
-      await delay(1500);
+      await delay(2000);
       setLoadMsg('遠い刺激を生成中…(4/4)');
-      const r4 = await callWithRetry(apiKey, CW_FAR_SYS, 'お題: ' + topic);
+      const r4 = await callWithRetry(apiKey, CW_FAR_SYS, 'お題: ' + topic, 'far');
 
       setLoadMsg('空間を構築中…');
 
