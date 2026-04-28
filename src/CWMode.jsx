@@ -44,7 +44,7 @@ export default function CWMode({ data, save }) {
   const [pan,       setPan]       = useState({ x: 0, y: 0 });
   const [loading,   setLoading]   = useState(false);
   const [loadMsg,   setLoadMsg]   = useState('');
-  const [topic,     setTopic]     = useState(data.projects[data.projects.length - 1]?.title || '');
+  const [topic,     setTopic]     = useState(data.projects[data.projects.length - 1]?.title || '外国人観光客に防災意識を持ってもらうアイデア');
   const [showM,     setShowM]     = useState(false);
   const [showHist,  setShowHist]  = useState(false);
   const [sideOpen,  setSideOpen]  = useState(false);
@@ -135,6 +135,16 @@ export default function CWMode({ data, save }) {
 
       const memo = tryParse(r1, 'memo').map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
 
+      const imageMemos = data.memos
+        .filter(m => m.imageId)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 5)
+        .map((m, i) => ({
+          id: 'img_' + i, text: m.title || m.content?.substring(0, 12) || '画像',
+          group: 1, imageId: m.imageId,
+        }));
+      const allMemo = [...memo, ...imageMemos];
+
       const stimRaw = tryParse(r2, 'stim');
       const nearRaw = Array.isArray(stimRaw) ? stimRaw : (stimRaw.near || []);
       const midRaw  = Array.isArray(stimRaw) ? [] : (stimRaw.mid || []);
@@ -144,9 +154,9 @@ export default function CWMode({ data, save }) {
       const mid  = midRaw.map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
       const far  = farRaw.map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
 
-      const { laid: viewNear, np: posNear, cx, cy } = doLayout([...memo, ...near]);
-      const { laid: viewMid,  np: posMid }           = doLayout([...memo, ...mid]);
-      const { laid: viewFar,  np: posFar }           = doLayout([...memo, ...far]);
+      const { laid: viewNear, np: posNear, cx, cy } = doLayout([...allMemo, ...near]);
+      const { laid: viewMid,  np: posMid }           = doLayout([...allMemo, ...mid]);
+      const { laid: viewFar,  np: posFar }           = doLayout([...allMemo, ...far]);
 
       const memoLaid = viewNear.filter(n => n.group === 1);
       const stimNear = viewNear.filter(n => n.group === 2);

@@ -205,7 +205,7 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
             onDrop={e => { e.preventDefault(); handleImageFile(e.dataTransfer.files?.[0]); }}
           >
             <input style={S.inp} placeholder="題名（任意）" value={ti} onChange={e => sTi(e.target.value)} />
-            <textarea style={{ ...S.inp, minHeight: 100 }} placeholder="メモ内容" value={co} onChange={e => sCo(e.target.value)} />
+            <textarea style={{ ...S.inp, minHeight: 200 }} placeholder="メモ内容" value={co} onChange={e => sCo(e.target.value)} />
 
             {/* image area */}
             {iPrev && (
@@ -230,8 +230,8 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
             <SuggestInput value={st} onChange={sSt} suggestions={suggestions?.states || []} placeholder="状態（任意）" />
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button style={{ ...S.pri, flex: 1 }} onClick={doSave}>保存する</button>
-              <button style={{ ...S.pri, flex: 0, padding: '12px 20px', background: C.bg2, color: C.sub }} onClick={() => setEd(false)}>キャンセル</button>
+              <button style={{ ...S.pri, flex: 1, padding: '10px', fontSize: 13 }} onClick={doSave}>保存</button>
+              <button style={{ ...S.pri, flex: 0, padding: '10px 16px', fontSize: 13, background: C.bg2, color: C.sub }} onClick={() => setEd(false)}>キャンセル</button>
             </div>
             <button
               style={{ ...S.txtBtn, fontSize: 11, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
@@ -706,7 +706,7 @@ function InsightTab({ data, save }) {
           {hd.map(d => (
             <div key={d.h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
               <div style={{ width: '100%', height: `${(d.c / mH) * 100}%`, background: d.c > 0 ? `linear-gradient(to top,${C.accent},${C.accent}90)` : 'transparent', borderRadius: '2px 2px 0 0', minHeight: d.c > 0 ? 3 : 0 }} />
-              {d.h % 6 === 0 && <span style={{ fontSize: 8, color: C.sub, marginTop: 2 }}>{d.h}</span>}
+              {d.h % 2 === 0 && <span style={{ fontSize: 8, color: C.sub, marginTop: 2 }}>{d.h}</span>}
             </div>
           ))}
         </div>
@@ -902,7 +902,12 @@ function DMNMode({ data, save }) {
 export default function App() {
   const { data, save } = useData();
   const [mode,          setMode]         = useState(MODES.CEN);
-  const [showSettings,  setShowSettings] = useState(!getApiKey()); /* open on first visit */
+  const [showSettings,  setShowSettings] = useState(() => {
+    if (getApiKey()) return false;
+    if (localStorage.getItem('cw-settings-seen')) return false;
+    localStorage.setItem('cw-settings-seen', '1');
+    return true;
+  });
   const [showReset,     setShowReset]    = useState(false);
   const [confirmReset,  setConfirmReset] = useState(false);
 
