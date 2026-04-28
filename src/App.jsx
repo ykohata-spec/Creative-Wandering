@@ -229,9 +229,9 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
             </div>
             <SuggestInput value={st} onChange={sSt} suggestions={suggestions?.states || []} placeholder="状態（任意）" />
 
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button style={{ ...S.pri, flex: 1, padding: '10px', fontSize: 13 }} onClick={doSave}>保存</button>
-              <button style={{ ...S.pri, flex: 0, padding: '10px 16px', fontSize: 13, background: C.bg2, color: C.sub }} onClick={() => setEd(false)}>キャンセル</button>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button style={{ ...S.pri, width: 'auto', padding: '10px 24px', fontSize: 13 }} onClick={doSave}>保存</button>
+              <button style={{ ...S.pri, width: 'auto', padding: '10px 16px', fontSize: 13, background: C.bg2, color: C.sub }} onClick={() => setEd(false)}>キャンセル</button>
             </div>
             <button
               style={{ ...S.txtBtn, fontSize: 11, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
@@ -706,7 +706,7 @@ function InsightTab({ data, save }) {
           {hd.map(d => (
             <div key={d.h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
               <div style={{ width: '100%', height: `${(d.c / mH) * 100}%`, background: d.c > 0 ? `linear-gradient(to top,${C.accent},${C.accent}90)` : 'transparent', borderRadius: '2px 2px 0 0', minHeight: d.c > 0 ? 3 : 0 }} />
-              {d.h % 2 === 0 && <span style={{ fontSize: 8, color: C.sub, marginTop: 2 }}>{d.h}</span>}
+              <span style={{ fontSize: 7, color: C.sub, marginTop: 2 }}>{d.h}</span>
             </div>
           ))}
         </div>

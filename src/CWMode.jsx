@@ -44,7 +44,7 @@ export default function CWMode({ data, save }) {
   const [pan,       setPan]       = useState({ x: 0, y: 0 });
   const [loading,   setLoading]   = useState(false);
   const [loadMsg,   setLoadMsg]   = useState('');
-  const [topic,     setTopic]     = useState(data.projects[data.projects.length - 1]?.title || '外国人観光客に防災意識を持ってもらうアイデア');
+  const [topic,     setTopic]     = useState('外国人観光客に防災意識を持ってもらうアイデア');
   const [showM,     setShowM]     = useState(false);
   const [showHist,  setShowHist]  = useState(false);
   const [sideOpen,  setSideOpen]  = useState(false);
