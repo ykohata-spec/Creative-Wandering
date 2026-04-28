@@ -12,9 +12,9 @@ const GROUP_COLORS = {
 };
 
 const DIST_INFO = [
-  { l: '近い',     c: '#3B82F6', desc: '同カテゴリ・関連トレンド' },
-  { l: 'やや遠い', c: '#F59E0B', desc: '異業種・感覚的に繋がる' },
-  { l: '遠い',     c: '#6E5DC6', desc: '抽象概念・メタファー' },
+  { l: '近い',     c: '#3B82F6', desc: '同じ世界の言葉' },
+  { l: 'やや遠い', c: '#F59E0B', desc: '隣の世界の言葉' },
+  { l: '遠い',     c: '#6E5DC6', desc: '対極の世界の言葉' },
 ];
 
 /* ── 画像ノード用コンポーネント ── */
@@ -329,9 +329,9 @@ export default function CWMode({ data, save }) {
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />お題（中心）</div>
             <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#8BBE2C', flexShrink: 0 }} />記憶・メモ — 常に表示</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', flexShrink: 0 }} />近い — 直接関連・トレンド</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />やや遠い — 異業種・構造類似</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#6E5DC6', flexShrink: 0 }} />遠い — 抽象・メタファー</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', flexShrink: 0 }} />近い — 同じ世界の言葉</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />やや遠い — 隣の世界の言葉</div>
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#6E5DC6', flexShrink: 0 }} />遠い — 対極の世界の言葉</div>
           </div>
 
           <div style={{ fontSize: 10, color: C.sub, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
