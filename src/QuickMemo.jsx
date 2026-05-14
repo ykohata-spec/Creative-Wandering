@@ -23,7 +23,7 @@ export default function QuickMemo({ onSave, onClose, initial = '' }) {
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '0 auto 16px' }} />
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>💡 ひらめきメモ</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: C.text }}>💡 ひらめきメモ</span>
           <button style={S.iconBtn} onClick={onClose}>✕</button>
         </div>
 
@@ -37,7 +37,7 @@ export default function QuickMemo({ onSave, onClose, initial = '' }) {
         />
 
         {!extra && (
-          <button style={{ ...S.txtBtn, fontSize: 12, marginBottom: 10 }} onClick={() => setExtra(true)}>
+          <button style={{ ...S.txtBtn, fontSize: 15, marginBottom: 10 }} onClick={() => setExtra(true)}>
             + サイズ・シーンを追加（任意）
           </button>
         )}
@@ -60,7 +60,7 @@ export default function QuickMemo({ onSave, onClose, initial = '' }) {
                 <button
                   key={sc}
                   onClick={() => setScene(scene === sc ? '' : sc)}
-                  style={{ ...S.chip, fontSize: 11, padding: '3px 8px', background: scene === sc ? C.accent + '18' : '#fff', color: scene === sc ? C.accent : C.sub, borderColor: scene === sc ? C.accent : C.border }}
+                  style={{ ...S.chip, fontSize: 14, padding: '3px 8px', background: scene === sc ? C.accent + '18' : '#fff', color: scene === sc ? C.accent : C.sub, borderColor: scene === sc ? C.accent : C.border }}
                 >
                   {sc}
                 </button>

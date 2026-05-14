@@ -12,9 +12,9 @@ const GROUP_COLORS = {
 };
 
 const DIST_INFO = [
-  { l: '近い',     c: '#3B82F6', desc: '同じ世界の言葉' },
-  { l: 'やや遠い', c: '#F59E0B', desc: '隣の世界の言葉' },
-  { l: '遠い',     c: '#6E5DC6', desc: '対極の世界の言葉' },
+  { l: '近い',     c: '#3B82F6', desc: 'お題のそばにある情景' },
+  { l: 'やや遠い', c: '#F59E0B', desc: '感覚的に繋がるもの' },
+  { l: '遠い',     c: '#6E5DC6', desc: '化学反応が起きそうなもの' },
 ];
 
 /* ── 画像ノード用コンポーネント ── */
@@ -31,7 +31,7 @@ function ImageNode({ imageId, text }) {
         ? <img src={src} alt="" style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 6, display: 'block', marginBottom: 4 }} />
         : <div style={{ width: 90, height: 68, background: '#f0ebe4', borderRadius: 6, marginBottom: 4 }} />
       }
-      <div style={{ fontSize: 11, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</div>
+      <div style={{ fontSize: 14, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</div>
     </div>
   );
 }
@@ -287,7 +287,7 @@ export default function CWMode({ data, save }) {
       {/* ── サイドパネル ── */}
       {(!isMobile || sideOpen) && (
         <div style={{
-          width: 220, padding: 20,
+          width: 280, padding: 20,
           borderRight: `1px solid ${C.border}`,
           background: '#FDFBF8',
           display: 'flex', flexDirection: 'column',
@@ -298,13 +298,13 @@ export default function CWMode({ data, save }) {
             <button style={{ ...S.iconBtn, alignSelf: 'flex-end', marginBottom: 8 }} onClick={() => setSideOpen(false)}>✕</button>
           )}
 
-          <div style={{ fontSize: 17, fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>Cloud Synapse</div>
-          <div style={{ fontSize: 11, color: C.sub, marginBottom: 14 }}>Creative Wandering 空間</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>Cloud Synapse</div>
+          <div style={{ fontSize: 14, color: C.sub, marginBottom: 14 }}>Creative Wandering 空間</div>
 
           {/* 距離パラメータ */}
           {hasData && (
             <div style={{ background: C.bg2, borderRadius: 10, padding: 14, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 10 }}>距離パラメータ</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 10 }}>距離パラメータ</div>
               <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
                 {DIST_INFO.map((d, i) => (
                   <button
@@ -315,7 +315,7 @@ export default function CWMode({ data, save }) {
                       border: `1.5px solid ${dist === i ? d.c : C.border}`,
                       background: dist === i ? d.c + '15' : '#fff',
                       color: dist === i ? d.c : C.sub,
-                      fontSize: 11, fontWeight: dist === i ? 700 : 400,
+                      fontSize: 14, fontWeight: dist === i ? 700 : 400,
                       cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
                     }}
                   >
@@ -323,13 +323,13 @@ export default function CWMode({ data, save }) {
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 10, color: C.textLight, lineHeight: 1.5, textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: C.textLight, lineHeight: 1.5, textAlign: 'center' }}>
                 {DIST_INFO[dist].desc}
               </div>
-              <div style={{ fontSize: 10, color: C.sub, textAlign: 'center', marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: C.sub, textAlign: 'center', marginTop: 4 }}>
                 メモ {memoNodes.length} + 刺激 {stimNodes.length} 表示中
               </div>
-              <div style={{ fontSize: 9, color: C.sub, textAlign: 'center', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: C.sub, textAlign: 'center', marginTop: 2 }}>
                 [近{pools.near?.length || 0} / やや遠{pools.mid?.length || 0} / 遠{pools.far?.length || 0}]
               </div>
             </div>
@@ -337,28 +337,28 @@ export default function CWMode({ data, save }) {
 
           {/* 凡例 */}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />お題（中心）</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#8BBE2C', flexShrink: 0 }} />記憶・メモ — 常に表示</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', flexShrink: 0 }} />近い — 同じ世界の言葉</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />やや遠い — 隣の世界の言葉</div>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#6E5DC6', flexShrink: 0 }} />遠い — 対極の世界の言葉</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />お題（中心）</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#8BBE2C', flexShrink: 0 }} />記憶・メモ — 常に表示</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', flexShrink: 0 }} />近い — お題のそばの情景</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />やや遠い — 感覚で繋がる</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#6E5DC6', flexShrink: 0 }} />遠い — 化学反応の種</div>
           </div>
 
-          <div style={{ fontSize: 10, color: C.sub, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
-          <div style={{ fontSize: 10, color: C.sub, marginBottom: 14 }}>🖐 背景ドラッグでスクロール</div>
+          <div style={{ fontSize: 13, color: C.sub, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
+          <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>🖐 背景ドラッグでスクロール</div>
 
           {/* 履歴 */}
           {history.length > 0 && (
             <div style={{ marginBottom: 8 }}>
-              <button style={{ ...S.txtBtn, fontSize: 11, color: C.accent }} onClick={() => setShowHist(!showHist)}>
+              <button style={{ ...S.txtBtn, fontSize: 14, color: C.accent }} onClick={() => setShowHist(!showHist)}>
                 📂 過去の空間 ({history.length}) {showHist ? '▲' : '▼'}
               </button>
               {showHist && (
                 <div style={{ marginTop: 8, maxHeight: 150, overflowY: 'auto' }}>
                   {history.map(h => (
                     <div key={h.id} style={{ padding: '8px 0', borderBottom: `1px solid ${C.border}`, cursor: 'pointer' }} onClick={() => loadHist(h)}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{h.topic}</div>
-                      <div style={{ fontSize: 10, color: C.sub }}>{fmtD(h.createdAt)}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{h.topic}</div>
+                      <div style={{ fontSize: 13, color: C.sub }}>{fmtD(h.createdAt)}</div>
                     </div>
                   ))}
                 </div>
@@ -367,17 +367,17 @@ export default function CWMode({ data, save }) {
           )}
 
           <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, marginTop: 'auto' }}>
-            <div style={{ fontSize: 11, color: C.sub, marginBottom: 6 }}>❶ お題をセット</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6 }}>❶ お題をセット</div>
             <textarea
-              style={{ ...S.inp, minHeight: 60, fontSize: 13 }}
+              style={{ ...S.inp, minHeight: 60, fontSize: 16 }}
               placeholder="思考の種を入力..."
               value={topic}
               onChange={e => setTopic(e.target.value)}
             />
-            <button style={{ ...S.pri, fontSize: 13 }} onClick={gen} disabled={loading}>
+            <button style={{ ...S.pri, fontSize: 16 }} onClick={gen} disabled={loading}>
               {loading ? '生成中…' : '空間を生成する'}
             </button>
-            <div style={{ fontSize: 10, color: C.sub, marginTop: 6 }}>ノードはドラッグで移動できます</div>
+            <div style={{ fontSize: 13, color: C.sub, marginTop: 6 }}>ノードはドラッグで移動できます</div>
           </div>
         </div>
       )}
@@ -396,7 +396,7 @@ export default function CWMode({ data, save }) {
       >
         {isMobile && !sideOpen && (
           <button
-            style={{ position: 'absolute', top: 12, left: 12, zIndex: 15, padding: '6px 12px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 20, fontSize: 12, color: C.text, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+            style={{ position: 'absolute', top: 12, left: 12, zIndex: 15, padding: '6px 12px', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 20, fontSize: 15, color: C.text, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
             onClick={() => setSideOpen(true)}
           >
             ⚙ 設定
@@ -415,7 +415,7 @@ export default function CWMode({ data, save }) {
               padding: '10px 28px',
               background: 'linear-gradient(135deg,#8BBE2C,#A0D940)',
               borderRadius: 28,
-              fontSize: 16, fontWeight: 800, color: '#fff',
+              fontSize: 19, fontWeight: 800, color: '#fff',
               cursor: drag === '__t' ? 'grabbing' : 'grab',
               userSelect: 'none', zIndex: 10,
               boxShadow: '0 4px 16px rgba(139,190,44,0.3)',
@@ -455,7 +455,7 @@ export default function CWMode({ data, save }) {
                 background: gc.bg,
                 border: `1.5px solid ${gc.border}`,
                 borderRadius: isImg ? 12 : 20,
-                fontSize: 13, fontWeight: 600, color: gc.color,
+                fontSize: 16, fontWeight: 600, color: gc.color,
                 boxShadow: `0 2px 8px ${gc.border}30`,
                 whiteSpace: 'normal',
                 maxWidth: isImg ? undefined : 360,
@@ -478,14 +478,14 @@ export default function CWMode({ data, save }) {
         {/* 空状態 */}
         {!hasData && !loading && (
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', color: C.sub }}>
-            <div style={{ fontSize: 52, marginBottom: 12, opacity: 0.25 }}>☁️</div>
-            <p style={{ fontSize: 14 }}>お題をセットして空間を生成してください</p>
+            <div style={{ fontSize: 56, marginBottom: 12, opacity: 0.25 }}>☁️</div>
+            <p style={{ fontSize: 17 }}>お題をセットして空間を生成してください</p>
           </div>
         )}
 
         {loading && (
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
-            <div style={{ fontSize: 14, color: C.accent, animation: 'cwPulse 1.5s ease-in-out infinite' }}>
+            <div style={{ fontSize: 17, color: C.accent, animation: 'cwPulse 1.5s ease-in-out infinite' }}>
               {loadMsg || '生成中…'}
             </div>
           </div>

@@ -43,7 +43,7 @@ function SuggestInput({ value, onChange, suggestions, placeholder, style: ext })
       {show && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: `1px solid ${C.border}`, borderRadius: '0 0 8px 8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: 120, overflowY: 'auto' }}>
           {filtered.slice(0, 8).map((s, i) => (
-            <div key={i} style={{ padding: '6px 12px', fontSize: 12, color: C.text, cursor: 'pointer', borderBottom: `1px solid ${C.border}20` }} onMouseDown={() => onChange(s)}>
+            <div key={i} style={{ padding: '6px 12px', fontSize: 15, color: C.text, cursor: 'pointer', borderBottom: `1px solid ${C.border}20` }} onMouseDown={() => onChange(s)}>
               {s}
             </div>
           ))}
@@ -93,7 +93,7 @@ function Settings({ onClose, onImport }) {
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '0 auto 16px' }} />
         <h3 style={{ ...S.sec, marginBottom: 16 }}>⚙ 設定</h3>
 
-        <p style={{ fontSize: 13, color: C.textLight, lineHeight: 1.7, marginBottom: 12 }}>
+        <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 12 }}>
           Gemini APIキーを設定してください。<br />
           <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: C.link }}>Google AI Studio</a> で無料取得できます（Googleアカウントのみ）。
         </p>
@@ -107,7 +107,7 @@ function Settings({ onClose, onImport }) {
           onKeyDown={e => e.key === 'Enter' && save()}
         />
         {key && (
-          <p style={{ fontSize: 11, color: C.sub, marginBottom: 8 }}>
+          <p style={{ fontSize: 14, color: C.sub, marginBottom: 8 }}>
             ※ このキーはあなたのブラウザにのみ保存されます。
           </p>
         )}
@@ -115,8 +115,8 @@ function Settings({ onClose, onImport }) {
 
         {/* ── データ移行 ── */}
         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 20, paddingTop: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 8 }}>📦 データ移行</div>
-          <p style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 12 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 8 }}>📦 データ移行</div>
+          <p style={{ fontSize: 15, color: C.sub, lineHeight: 1.6, marginBottom: 12 }}>
             メモ・お題・画像など全データを1つのファイルで別デバイスに移行できます。
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -126,7 +126,7 @@ function Settings({ onClose, onImport }) {
             </button>
             <input ref={impRef} type="file" accept=".json" style={{ display: 'none' }} onChange={doImport} />
           </div>
-          {msg && <p style={{ fontSize: 12, color: msg.startsWith('エラー') ? '#D07070' : '#22C55E', marginTop: 8 }}>{msg}</p>}
+          {msg && <p style={{ fontSize: 15, color: msg.startsWith('エラー') ? '#D07070' : '#22C55E', marginTop: 8 }}>{msg}</p>}
         </div>
 
         <div style={{ height: 'env(safe-area-inset-bottom, 8px)' }} />
@@ -192,9 +192,9 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
       <div style={{ ...S.modal, maxWidth: 520 }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '0 auto 14px' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{ed ? '📝 メモを編集' : '📦 メモ詳細'}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: C.text }}>{ed ? '📝 メモを編集' : '📦 メモ詳細'}</span>
           <div style={{ display: 'flex', gap: 8 }}>
-            {!ed && <button style={{ ...S.txtBtn, fontSize: 12, color: C.accent }} onClick={() => setEd(true)}>編集</button>}
+            {!ed && <button style={{ ...S.txtBtn, fontSize: 15, color: C.accent }} onClick={() => setEd(true)}>編集</button>}
             <button style={S.iconBtn} onClick={onClose}>✕</button>
           </div>
         </div>
@@ -211,15 +211,15 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
             {iPrev && (
               <div style={{ position: 'relative', marginBottom: 8 }}>
                 <img src={iPrev} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
-                <button onClick={removeImage} style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: 20, padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>削除</button>
+                <button onClick={removeImage} style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: 20, padding: '3px 8px', fontSize: 14, cursor: 'pointer' }}>削除</button>
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <button style={{ ...S.txtBtn, fontSize: 12, color: C.accent2, padding: '6px 12px', border: `1px solid ${C.accent2}`, borderRadius: 8 }} onClick={() => fileRef.current?.click()}>
+              <button style={{ ...S.txtBtn, fontSize: 15, color: C.accent2, padding: '6px 12px', border: `1px solid ${C.accent2}`, borderRadius: 8 }} onClick={() => fileRef.current?.click()}>
                 📷 画像を{iPrev ? '変更' : '追加'}
               </button>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageFile(e.target.files?.[0])} />
-              <span style={{ fontSize: 11, color: C.sub, alignSelf: 'center' }}>またはペースト（Ctrl+V）</span>
+              <span style={{ fontSize: 14, color: C.sub, alignSelf: 'center' }}>またはペースト（Ctrl+V）</span>
             </div>
 
             <input style={S.inp} placeholder="URL（任意）" value={ur} onChange={e => sUr(e.target.value)} />
@@ -230,11 +230,11 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
             <SuggestInput value={st} onChange={sSt} suggestions={suggestions?.states || []} placeholder="状態（任意）" />
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button style={{ ...S.pri, width: 'auto', padding: '10px 24px', fontSize: 13 }} onClick={doSave}>保存</button>
-              <button style={{ ...S.pri, width: 'auto', padding: '10px 16px', fontSize: 13, background: C.bg2, color: C.sub }} onClick={() => setEd(false)}>キャンセル</button>
+              <button style={{ ...S.pri, width: 'auto', padding: '10px 24px', fontSize: 16 }} onClick={doSave}>保存</button>
+              <button style={{ ...S.pri, width: 'auto', padding: '10px 16px', fontSize: 16, background: C.bg2, color: C.sub }} onClick={() => setEd(false)}>キャンセル</button>
             </div>
             <button
-              style={{ ...S.txtBtn, fontSize: 11, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
+              style={{ ...S.txtBtn, fontSize: 14, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
               onClick={doDelete}
             >
               {confirmDel ? '本当に削除する' : 'このメモを削除'}
@@ -245,15 +245,15 @@ function MemoDetail({ memo, onSave, onDelete, onClose, suggestions }) {
             {memo.imageId && (
               <MemoImage imageId={memo.imageId} style={{ width: '100%', height: 180, borderRadius: 10, marginBottom: 12, objectFit: 'cover', display: 'block', background: C.bg2 }} />
             )}
-            {memo.title && <div style={{ fontSize: 16, fontWeight: 700, color: C.accent, marginBottom: 6 }}>{memo.title}</div>}
-            <div style={{ fontSize: 14, color: C.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', marginBottom: 12 }}>{memo.content}</div>
-            {memo.url && <a href={memo.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: C.link, display: 'block', marginBottom: 8, wordBreak: 'break-all' }}>🔗 {memo.url}</a>}
+            {memo.title && <div style={{ fontSize: 19, fontWeight: 700, color: C.accent, marginBottom: 6 }}>{memo.title}</div>}
+            <div style={{ fontSize: 17, color: C.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', marginBottom: 12 }}>{memo.content}</div>
+            {memo.url && <a href={memo.url} target="_blank" rel="noreferrer" style={{ fontSize: 16, color: C.link, display: 'block', marginBottom: 8, wordBreak: 'break-all' }}>🔗 {memo.url}</a>}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-              {memo.tag   && <span style={{ ...S.tgSm, fontSize: 12, padding: '3px 8px' }}>#{memo.tag}</span>}
-              {memo.place && <span style={{ ...S.tgSm, fontSize: 12, padding: '3px 8px', color: C.accent2 }}>📍 {memo.place}</span>}
-              {memo.state && <span style={{ ...S.tgSm, fontSize: 12, padding: '3px 8px', color: '#8B7EB0' }}>🧠 {memo.state}</span>}
+              {memo.tag   && <span style={{ ...S.tgSm, fontSize: 15, padding: '3px 8px' }}>#{memo.tag}</span>}
+              {memo.place && <span style={{ ...S.tgSm, fontSize: 15, padding: '3px 8px', color: C.accent2 }}>📍 {memo.place}</span>}
+              {memo.state && <span style={{ ...S.tgSm, fontSize: 15, padding: '3px 8px', color: '#8B7EB0' }}>🧠 {memo.state}</span>}
             </div>
-            <div style={{ fontSize: 11, color: C.sub }}>{fmtD(memo.createdAt)}</div>
+            <div style={{ fontSize: 14, color: C.sub }}>{fmtD(memo.createdAt)}</div>
           </>
         )}
         <div style={{ height: 'env(safe-area-inset-bottom, 8px)' }} />
@@ -367,14 +367,14 @@ function MemoTab({ data, save }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-        <h3 style={S.sec}>📦 メモ箱 <span style={{ fontSize: 13, color: C.sub, fontWeight: 400 }}>({data.memos.length}件)</span></h3>
+        <h3 style={S.sec}>📦 メモ箱 <span style={{ fontSize: 16, color: C.sub, fontWeight: 400 }}>({data.memos.length}件)</span></h3>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button style={{ ...S.txtBtn, fontSize: 11 }} onClick={() => setView(view === 'gallery' ? 'list' : 'gallery')}>{view === 'gallery' ? '≡ リスト' : '▦ ギャラリー'}</button>
+          <button style={{ ...S.txtBtn, fontSize: 14 }} onClick={() => setView(view === 'gallery' ? 'list' : 'gallery')}>{view === 'gallery' ? '≡ リスト' : '▦ ギャラリー'}</button>
           {!selectMode && <>
-            {data.memos.length > 0 && <button style={{ ...S.txtBtn, fontSize: 11 }} onClick={() => setSelectMode(true)}>選択</button>}
-            <button style={{ ...S.txtBtn, fontSize: 11 }} onClick={() => csvRef.current?.click()}>CSV取込↑</button>
+            {data.memos.length > 0 && <button style={{ ...S.txtBtn, fontSize: 14 }} onClick={() => setSelectMode(true)}>選択</button>}
+            <button style={{ ...S.txtBtn, fontSize: 14 }} onClick={() => csvRef.current?.click()}>CSV取込↑</button>
             <input ref={csvRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={impCSV} />
-            {data.memos.length > 0 && <button style={{ ...S.txtBtn, fontSize: 11 }} onClick={expCSV}>CSV書出↓</button>}
+            {data.memos.length > 0 && <button style={{ ...S.txtBtn, fontSize: 14 }} onClick={expCSV}>CSV書出↓</button>}
           </>}
         </div>
       </div>
@@ -382,15 +382,15 @@ function MemoTab({ data, save }) {
       {/* select toolbar */}
       {selectMode && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, padding: '10px 14px', background: C.bg2, borderRadius: 10 }}>
-          <button style={{ ...S.txtBtn, fontSize: 12, color: C.accent }} onClick={selectAll}>{selected.size === data.memos.length ? '全解除' : '全選択'}</button>
-          <span style={{ fontSize: 12, color: C.sub, flex: 1 }}>{selected.size}件選択中</span>
+          <button style={{ ...S.txtBtn, fontSize: 15, color: C.accent }} onClick={selectAll}>{selected.size === data.memos.length ? '全解除' : '全選択'}</button>
+          <span style={{ fontSize: 15, color: C.sub, flex: 1 }}>{selected.size}件選択中</span>
           <button
-            style={{ ...S.txtBtn, fontSize: 12, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6 }}
+            style={{ ...S.txtBtn, fontSize: 15, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6 }}
             onClick={deleteSelected} disabled={selected.size === 0}
           >
             {confirmDel ? `${selected.size}件を本当に削除` : '削除'}
           </button>
-          <button style={{ ...S.txtBtn, fontSize: 12 }} onClick={exitSelect}>キャンセル</button>
+          <button style={{ ...S.txtBtn, fontSize: 15 }} onClick={exitSelect}>キャンセル</button>
         </div>
       )}
 
@@ -407,14 +407,14 @@ function MemoTab({ data, save }) {
           {imagePrev && (
             <div style={{ position: 'relative', marginBottom: 8 }}>
               <img src={imagePrev} alt="" style={{ width: '100%', height: 130, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
-              <button onClick={removeImage} style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: 20, padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>✕ 削除</button>
+              <button onClick={removeImage} style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: 20, padding: '3px 8px', fontSize: 14, cursor: 'pointer' }}>✕ 削除</button>
             </div>
           )}
 
           {/* image & url row */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
             <button
-              style={{ ...S.txtBtn, fontSize: 12, color: C.accent2, padding: '6px 12px', border: `1px solid ${C.accent2}`, borderRadius: 8, flexShrink: 0 }}
+              style={{ ...S.txtBtn, fontSize: 15, color: C.accent2, padding: '6px 12px', border: `1px solid ${C.accent2}`, borderRadius: 8, flexShrink: 0 }}
               onClick={() => fileRef.current?.click()}
             >
               📷 画像を追加
@@ -429,7 +429,7 @@ function MemoTab({ data, save }) {
           </div>
 
           {!showExtra && (
-            <button style={{ ...S.txtBtn, fontSize: 12, marginBottom: 8 }} onClick={() => setShowExtra(true)}>+ 場所・状態を追加（任意）</button>
+            <button style={{ ...S.txtBtn, fontSize: 15, marginBottom: 8 }} onClick={() => setShowExtra(true)}>+ 場所・状態を追加（任意）</button>
           )}
           {showExtra && (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -452,18 +452,18 @@ function MemoTab({ data, save }) {
               onClick={() => handleCardClick(m)}
             >
               {selectMode && (
-                <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected.has(m.id) ? C.accent : C.border}`, background: selected.has(m.id) ? C.accent : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#fff' }}>
+                <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected.has(m.id) ? C.accent : C.border}`, background: selected.has(m.id) ? C.accent : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#fff' }}>
                   {selected.has(m.id) ? '✓' : ''}
                 </div>
               )}
               {m.imageId && <MemoImage imageId={m.imageId} style={imgStyle(80)} />}
-              {m.title && <div style={{ fontSize: 12, fontWeight: 600, color: C.accent, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>}
-              <div style={{ fontSize: 12, color: C.text, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.content}</div>
+              {m.title && <div style={{ fontSize: 15, fontWeight: 600, color: C.accent, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>}
+              <div style={{ fontSize: 15, color: C.text, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.content}</div>
               <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {m.tag   && <span style={S.tgSm}>#{m.tag}</span>}
                 {m.place && <span style={{ ...S.tgSm, color: C.accent2 }}>📍{m.place}</span>}
               </div>
-              <div style={{ fontSize: 10, color: C.sub, marginTop: 4 }}>{fmtD(m.createdAt)}</div>
+              <div style={{ fontSize: 13, color: C.sub, marginTop: 4 }}>{fmtD(m.createdAt)}</div>
             </div>
           ))}
         </div>
@@ -473,20 +473,20 @@ function MemoTab({ data, save }) {
             <div key={m.id} style={{ ...S.listItem, cursor: 'pointer', background: selectMode && selected.has(m.id) ? C.accent + '10' : 'transparent' }} onClick={() => handleCardClick(m)}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 {selectMode && (
-                  <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected.has(m.id) ? C.accent : C.border}`, background: selected.has(m.id) ? C.accent : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#fff', flexShrink: 0, marginTop: 2 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected.has(m.id) ? C.accent : C.border}`, background: selected.has(m.id) ? C.accent : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#fff', flexShrink: 0, marginTop: 2 }}>
                     {selected.has(m.id) ? '✓' : ''}
                   </div>
                 )}
                 {m.imageId && <MemoImage imageId={m.imageId} style={{ width: 48, height: 48, borderRadius: 8, flexShrink: 0, objectFit: 'cover', backgroundColor: C.bg2 }} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {m.title && <div style={{ fontSize: 13, fontWeight: 600, color: C.accent, marginBottom: 1 }}>{m.title}</div>}
-                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.content}</div>
+                  {m.title && <div style={{ fontSize: 16, fontWeight: 600, color: C.accent, marginBottom: 1 }}>{m.title}</div>}
+                  <div style={{ fontSize: 16, color: C.text, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.content}</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                     {m.tag   && <span style={S.tgSm}>#{m.tag}</span>}
                     {m.place && <span style={{ ...S.tgSm, color: C.accent2 }}>📍{m.place}</span>}
                     {m.state && <span style={{ ...S.tgSm, color: '#8B7EB0' }}>🧠{m.state}</span>}
-                    {m.url   && <span style={{ fontSize: 11, color: C.link }}>🔗</span>}
-                    <span style={{ fontSize: 10, color: C.sub }}>{fmtD(m.createdAt)}</span>
+                    {m.url   && <span style={{ fontSize: 14, color: C.link }}>🔗</span>}
+                    <span style={{ fontSize: 13, color: C.sub }}>{fmtD(m.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -532,7 +532,7 @@ function ProjTab({ data, save }) {
 
       {data.projects.length > 0 && (
         <div style={{ ...S.card, marginTop: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 8 }}>⚓ アンカー設定</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.sub, marginBottom: 8 }}>⚓ アンカー設定</div>
           <select style={S.inp} value={sel || ''} onChange={e => sSel(e.target.value)}>
             <option value="">お題を選択</option>
             {data.projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
@@ -545,14 +545,14 @@ function ProjTab({ data, save }) {
 
       {data.projects.slice().reverse().map(p => (
         <div key={p.id} style={{ ...S.listItem, marginTop: 8 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{p.title}</div>
-          {p.brief && <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>{p.brief}</div>}
-          <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>登録: {fmtD(p.createdAt)}</div>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 17 }}>{p.title}</div>
+          {p.brief && <div style={{ fontSize: 15, color: C.sub, marginTop: 2 }}>{p.brief}</div>}
+          <div style={{ fontSize: 14, color: C.sub, marginTop: 2 }}>登録: {fmtD(p.createdAt)}</div>
           {p.anchors?.slice(-2).map((a, i) => (
             <div key={i} style={{ marginTop: 6, paddingLeft: 10, borderLeft: `2px solid ${C.accent2}` }}>
-              <div style={{ fontSize: 12, color: C.accent }}>🧭 {a.text}</div>
-              {a.stuck && <div style={{ fontSize: 11, color: '#D08080' }}>⚠ {a.stuck}</div>}
-              <div style={{ fontSize: 10, color: C.sub }}>{fmtD(a.createdAt)}</div>
+              <div style={{ fontSize: 15, color: C.accent }}>🧭 {a.text}</div>
+              {a.stuck && <div style={{ fontSize: 14, color: '#D08080' }}>⚠ {a.stuck}</div>}
+              <div style={{ fontSize: 13, color: C.sub }}>{fmtD(a.createdAt)}</div>
             </div>
           ))}
         </div>
@@ -615,19 +615,19 @@ function ChatTab({ data, save }) {
       <div style={S.chatBox}>
         {msgs.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: C.sub }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>🤝</div>
-            <p style={{ fontSize: 13, lineHeight: 1.7 }}>考えていることを話してください。</p>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🤝</div>
+            <p style={{ fontSize: 16, lineHeight: 1.7 }}>考えていることを話してください。</p>
           </div>
         )}
         {msgs.map((m, i) => (
           <div key={i} style={{ ...S.bub, alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? C.accent + '12' : '#fff', borderColor: m.role === 'user' ? C.accent + '40' : C.border }}>
-            <div style={{ fontSize: 10, color: C.sub, marginBottom: 3 }}>{m.role === 'user' ? 'あなた' : 'CENエージェント'}</div>
-            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{m.text}</div>
+            <div style={{ fontSize: 13, color: C.sub, marginBottom: 3 }}>{m.role === 'user' ? 'あなた' : 'CENエージェント'}</div>
+            <div style={{ fontSize: 16, color: C.text, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{m.text}</div>
           </div>
         ))}
         {loading && (
           <div style={{ ...S.bub, alignSelf: 'flex-start', background: '#fff', borderColor: C.border }}>
-            <div style={{ fontSize: 13, color: C.sub }}>思考中…</div>
+            <div style={{ fontSize: 16, color: C.sub }}>思考中…</div>
           </div>
         )}
         <div ref={ref} />
@@ -684,7 +684,7 @@ function InsightTab({ data, save }) {
 
   if (sp.length === 0) return (
     <div style={{ textAlign: 'center', padding: '60px 20px', color: C.sub }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+      <div style={{ fontSize: 44, marginBottom: 12 }}>📊</div>
       <p>まだひらめきデータがありません。</p>
     </div>
   );
@@ -696,12 +696,12 @@ function InsightTab({ data, save }) {
         <button style={S.txtBtn} onClick={expCSV}>CSV ↓</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-        <div style={S.stat}><div style={{ fontSize: 26, fontWeight: 800, color: '#E0A030' }}>{sp.length}</div><div style={{ fontSize: 11, color: C.sub }}>総数</div></div>
-        <div style={S.stat}><div style={{ fontSize: 26, fontWeight: 800, color: '#E05252' }}>{sc.big}</div><div style={{ fontSize: 11, color: C.sub }}>🔥 BIG</div></div>
-        <div style={S.stat}><div style={{ fontSize: 26, fontWeight: 800, color: '#4A90D9' }}>{sc.small + sc.middle}</div><div style={{ fontSize: 11, color: C.sub }}>MID+SM</div></div>
+        <div style={S.stat}><div style={{ fontSize: 30, fontWeight: 800, color: '#E0A030' }}>{sp.length}</div><div style={{ fontSize: 14, color: C.sub }}>総数</div></div>
+        <div style={S.stat}><div style={{ fontSize: 30, fontWeight: 800, color: '#E05252' }}>{sc.big}</div><div style={{ fontSize: 14, color: C.sub }}>🔥 BIG</div></div>
+        <div style={S.stat}><div style={{ fontSize: 30, fontWeight: 800, color: '#4A90D9' }}>{sc.small + sc.middle}</div><div style={{ fontSize: 14, color: C.sub }}>MID+SM</div></div>
       </div>
       <div style={S.card}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 10 }}>時間帯別</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.sub, marginBottom: 10 }}>時間帯別</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 72 }}>
           {hd.map(d => (
             <div key={d.h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
@@ -713,10 +713,10 @@ function InsightTab({ data, save }) {
       </div>
       {se.length > 0 && (
         <div style={{ ...S.card, marginTop: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 10 }}>シーン別</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.sub, marginBottom: 10 }}>シーン別</div>
           {se.slice(0, 6).map(([s, c]) => (
             <div key={s} style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.text, marginBottom: 2 }}><span>{s}</span><span>{c}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, color: C.text, marginBottom: 2 }}><span>{s}</span><span>{c}</span></div>
               <div style={{ height: 5, background: C.bg2, borderRadius: 3 }}>
                 <div style={{ height: '100%', width: `${(c / mS) * 100}%`, background: C.accent, borderRadius: 3 }} />
               </div>
@@ -728,7 +728,7 @@ function InsightTab({ data, save }) {
       {/* ── ひらめき一覧 ── */}
       <div style={{ marginTop: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={S.sec}>💡 ひらめき一覧 <span style={{ fontSize: 13, color: C.sub, fontWeight: 400 }}>({filtered.length}件)</span></h3>
+          <h3 style={S.sec}>💡 ひらめき一覧 <span style={{ fontSize: 16, color: C.sub, fontWeight: 400 }}>({filtered.length}件)</span></h3>
         </div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
           <button
@@ -757,11 +757,11 @@ function InsightTab({ data, save }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, color: C.text, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{s.content || '（内容なし）'}</div>
+                  <div style={{ fontSize: 17, color: C.text, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{s.content || '（内容なし）'}</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                    {si && <span style={{ fontSize: 11, color: '#fff', background: si.c, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>{si.e} {si.l}</span>}
+                    {si && <span style={{ fontSize: 14, color: '#fff', background: si.c, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>{si.e} {si.l}</span>}
                     {s.scene && <span style={{ ...S.tgSm, color: C.accent2 }}>{s.scene}</span>}
-                    <span style={{ fontSize: 10, color: C.sub }}>{fmtD(s.createdAt)}</span>
+                    <span style={{ fontSize: 13, color: C.sub }}>{fmtD(s.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -769,7 +769,7 @@ function InsightTab({ data, save }) {
           );
         })}
         {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '24px 16px', color: C.sub, fontSize: 13 }}>
+          <div style={{ textAlign: 'center', padding: '24px 16px', color: C.sub, fontSize: 16 }}>
             該当するひらめきがありません
           </div>
         )}
@@ -781,7 +781,7 @@ function InsightTab({ data, save }) {
           <div style={{ ...S.modal, maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '0 auto 14px' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>💡 ひらめき詳細</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: C.text }}>💡 ひらめき詳細</span>
               <button style={S.iconBtn} onClick={() => setOpenSpark(null)}>✕</button>
             </div>
             <textarea
@@ -791,12 +791,12 @@ function InsightTab({ data, save }) {
             />
             <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
               {openSpark.size && sizeInfo[openSpark.size] && (
-                <span style={{ fontSize: 12, color: '#fff', background: sizeInfo[openSpark.size].c, padding: '3px 10px', borderRadius: 10, fontWeight: 600 }}>
+                <span style={{ fontSize: 15, color: '#fff', background: sizeInfo[openSpark.size].c, padding: '3px 10px', borderRadius: 10, fontWeight: 600 }}>
                   {sizeInfo[openSpark.size].e} {sizeInfo[openSpark.size].l}
                 </span>
               )}
-              {openSpark.scene && <span style={{ ...S.tgSm, fontSize: 12, padding: '3px 8px', color: C.accent2 }}>{openSpark.scene}</span>}
-              <span style={{ fontSize: 11, color: C.sub }}>{fmtD(openSpark.createdAt)}</span>
+              {openSpark.scene && <span style={{ ...S.tgSm, fontSize: 15, padding: '3px 8px', color: C.accent2 }}>{openSpark.scene}</span>}
+              <span style={{ fontSize: 14, color: C.sub }}>{fmtD(openSpark.createdAt)}</span>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -808,7 +808,7 @@ function InsightTab({ data, save }) {
               </button>
             </div>
             <button
-              style={{ ...S.txtBtn, fontSize: 11, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
+              style={{ ...S.txtBtn, fontSize: 14, color: confirmDel ? '#fff' : '#D07070', background: confirmDel ? '#D07070' : 'transparent', padding: confirmDel ? '4px 12px' : '0', borderRadius: 6, marginTop: 14 }}
               onClick={() => confirmDel ? deleteSpark(openSpark.id) : setConfirmDel(true)}
             >
               {confirmDel ? '本当に削除する' : 'このひらめきを削除'}
@@ -878,19 +878,19 @@ function DMNMode({ data, save }) {
     <div style={S.dmnC}>
       {showA && la && (
         <div style={S.dmnAnc}>
-          <div style={{ fontSize: 12, color: C.sub, marginBottom: 4 }}>⚓ 離脱前のアンカー</div>
-          <div style={{ fontSize: 15, color: C.accent, fontWeight: 600 }}>{lp?.title}</div>
-          <div style={{ fontSize: 13, color: C.textLight, marginTop: 4 }}>{la.text}</div>
-          {la.stuck && <div style={{ fontSize: 12, color: '#D08080', marginTop: 2 }}>⚠ {la.stuck}</div>}
+          <div style={{ fontSize: 15, color: C.sub, marginBottom: 4 }}>⚓ 離脱前のアンカー</div>
+          <div style={{ fontSize: 18, color: C.accent, fontWeight: 600 }}>{lp?.title}</div>
+          <div style={{ fontSize: 16, color: C.textLight, marginTop: 4 }}>{la.text}</div>
+          {la.stuck && <div style={{ fontSize: 15, color: '#D08080', marginTop: 2 }}>⚠ {la.stuck}</div>}
         </div>
       )}
-      {!act && <p style={{ fontSize: 15, color: C.sub, textAlign: 'center', lineHeight: 1.8, maxWidth: 320 }}>{prompt}</p>}
-      <div style={{ fontSize: 64, fontWeight: 200, color: act ? C.accent : C.border, fontFamily: "'Courier New',monospace", letterSpacing: '0.05em' }}>
+      {!act && <p style={{ fontSize: 18, color: C.sub, textAlign: 'center', lineHeight: 1.8, maxWidth: 320 }}>{prompt}</p>}
+      <div style={{ fontSize: 68, fontWeight: 200, color: act ? C.accent : C.border, fontFamily: "'Courier New',monospace", letterSpacing: '0.05em' }}>
         {fmtT(sec)}
       </div>
       {!act
-        ? <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: C.bg2, color: C.text, fontSize: 14 }} onClick={start}>離脱する 🌿</button>
-        : <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: '#fff', border: `1px solid ${C.border}`, color: C.textLight, fontSize: 14 }} onClick={stop}>戻ってきた</button>
+        ? <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: C.bg2, color: C.text, fontSize: 17 }} onClick={start}>離脱する 🌿</button>
+        : <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: '#fff', border: `1px solid ${C.border}`, color: C.textLight, fontSize: 17 }} onClick={stop}>戻ってきた</button>
       }
       <button style={S.dmnSpark} onClick={() => setShowM(true)}>💡 ひらめいた</button>
       {showM && <QuickMemo onSave={addSpark} onClose={() => setShowM(false)} />}
@@ -932,13 +932,13 @@ export default function App() {
             onClick={() => setMode(m.id)}
             style={{ ...S.mBtn, color: mode === m.id ? m.c : C.sub, borderColor: mode === m.id ? m.c : 'transparent', background: mode === m.id ? m.c + '10' : 'transparent' }}
           >
-            <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.05em' }}>{m.l}</span>
-            <span style={{ fontSize: 10 }}>{m.s}</span>
+            <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: '0.05em' }}>{m.l}</span>
+            <span style={{ fontSize: 13 }}>{m.s}</span>
           </button>
         ))}
         <button
           onClick={() => setShowSettings(true)}
-          style={{ padding: '8px 14px', border: 'none', background: 'transparent', color: C.sub, fontSize: 16, cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ padding: '8px 14px', border: 'none', background: 'transparent', color: C.sub, fontSize: 19, cursor: 'pointer', fontFamily: 'inherit' }}
         >
           ⚙
         </button>
@@ -947,14 +947,14 @@ export default function App() {
       {/* ── reset bar ── */}
       {showReset && (
         <div style={{ padding: '10px 16px', background: C.bg2, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, color: C.sub, flex: 1 }}>全データをリセット（メモ・お題・ひらめき・チャット履歴を全削除）</span>
+          <span style={{ fontSize: 15, color: C.sub, flex: 1 }}>全データをリセット（メモ・お題・ひらめき・チャット履歴を全削除）</span>
           <button
-            style={{ ...S.txtBtn, fontSize: 12, color: confirmReset ? '#fff' : '#D07070', background: confirmReset ? '#D07070' : 'transparent', padding: confirmReset ? '4px 12px' : '0', borderRadius: 6 }}
+            style={{ ...S.txtBtn, fontSize: 15, color: confirmReset ? '#fff' : '#D07070', background: confirmReset ? '#D07070' : 'transparent', padding: confirmReset ? '4px 12px' : '0', borderRadius: 6 }}
             onClick={doReset}
           >
             {confirmReset ? '本当にリセット' : 'リセット'}
           </button>
-          <button style={{ ...S.txtBtn, fontSize: 12 }} onClick={() => { setShowReset(false); setConfirmReset(false); }}>閉じる</button>
+          <button style={{ ...S.txtBtn, fontSize: 15 }} onClick={() => { setShowReset(false); setConfirmReset(false); }}>閉じる</button>
         </div>
       )}
 
