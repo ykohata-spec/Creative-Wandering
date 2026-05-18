@@ -922,7 +922,7 @@ function DMNMode({ data, save, onSwitchMode }) {
               <span style={{ fontSize: 22 }}>🔢</span>
               <div style={{ textAlign: 'left', flex: 1 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>数字タスク</div>
-                <div style={{ fontSize: 14, color: C.sub }}>数字を眺めながら頭を遊ばせる</div>
+                <div style={{ fontSize: 14, color: C.sub }}>流れる数字をぼんやり眺め、たまに反応する</div>
               </div>
               <span style={{ fontSize: 13, color: C.sub }}>{taskOpen === 'digit' ? '▲' : '▼'}</span>
             </button>
@@ -944,7 +944,7 @@ function DMNMode({ data, save, onSwitchMode }) {
               <span style={{ fontSize: 22 }}>🎵</span>
               <div style={{ textAlign: 'left', flex: 1 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>リズムタスク</div>
-                <div style={{ fontSize: 14, color: C.sub }}>リズムに合わせて軽くタップ</div>
+                <div style={{ fontSize: 14, color: C.sub }}>メトロノームの音に合わせて画面をタップ</div>
               </div>
               <span style={{ fontSize: 13, color: C.sub }}>{taskOpen === 'rhythm' ? '▲' : '▼'}</span>
             </button>

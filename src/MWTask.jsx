@@ -135,7 +135,7 @@ function RhythmTask({ onLog }) {
 
 /* ═══ MWTask — Main Component ═══ */
 export default function MWTask({ type, duration, anchor, onSpark, onDone }) {
-  const [phase, setPhase] = useState(anchor?.topic ? 'anchor' : 'permission');
+  const [phase, setPhase] = useState(anchor?.topic ? 'anchor' : 'instruction');
   const [elapsed, setElapsed] = useState(0);
   const [showMemo, setShowMemo] = useState(false);
   const total = duration * 60;
@@ -144,11 +144,7 @@ export default function MWTask({ type, duration, anchor, onSpark, onDone }) {
 
   useEffect(() => {
     if (phase === 'anchor') {
-      const t = setTimeout(() => setPhase('permission'), 3000);
-      return () => clearTimeout(t);
-    }
-    if (phase === 'permission') {
-      const t = setTimeout(() => { logRef.current.startedAt = now(); setPhase('running'); }, 4500);
+      const t = setTimeout(() => setPhase('instruction'), 3000);
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -184,6 +180,40 @@ export default function MWTask({ type, duration, anchor, onSpark, onDone }) {
     </div>
   );
 
+  if (phase === 'instruction') {
+    const digitRules = [
+      '画面に数字が次々と表示されます',
+      'ほとんどは白い数字 → 眺めるだけでOK',
+      'たまに緑の数字が出ます → 偶数か奇数かを選んでください',
+      'スコアは記録しません。正解にこだわらなくて大丈夫です',
+    ];
+    const rhythmRules = [
+      '一定のリズムで音と光が鳴ります',
+      'リズムに合わせて画面を軽くタップしてください',
+      '正確さは気にしなくて大丈夫。なんとなく合わせる程度で',
+    ];
+    const rules = type === 'digit' ? digitRules : rhythmRules;
+    return (
+      <div style={S.dmnC}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+          {type === 'digit' ? '数字タスクのやり方' : 'リズムタスクのやり方'}
+        </div>
+        <div style={{ maxWidth: 320, width: '100%' }}>
+          {rules.map((r, i) => (
+            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
+              <span style={{ fontSize: 15, color: C.accent, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+              <span style={{ fontSize: 16, color: C.textLight, lineHeight: 1.6 }}>{r}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 14, color: C.sub, marginTop: 8 }}>{duration}分間</div>
+        <button style={{ ...S.pri, width: 'auto', padding: '14px 36px', marginTop: 16 }} onClick={() => setPhase('permission')}>
+          わかった
+        </button>
+      </div>
+    );
+  }
+
   if (phase === 'permission') {
     const msg = type === 'digit'
       ? '数字に軽く反応しながら、\n頭は自由に遊ばせてください。\n\nお題のことを考えなくても大丈夫。\nふと何か浮かんだら、追いかけてみて。'
@@ -191,6 +221,9 @@ export default function MWTask({ type, duration, anchor, onSpark, onDone }) {
     return (
       <div style={S.dmnC}>
         <div style={{ fontSize: 18, color: C.textLight, lineHeight: 2.2, textAlign: 'center', whiteSpace: 'pre-wrap', maxWidth: 340 }}>{msg}</div>
+        <button style={{ ...S.pri, width: 'auto', padding: '14px 36px', marginTop: 16 }} onClick={() => { logRef.current.startedAt = now(); setPhase('running'); }}>
+          はじめる
+        </button>
       </div>
     );
   }
