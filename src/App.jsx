@@ -4,6 +4,7 @@ import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, save
 import { callGemini, CEN_SYS } from './gemini.js';
 import { memosToCSV, csvToMemos } from './csv.js';
 import CWMode from './CWMode.jsx';
+import MWTask from './MWTask.jsx';
 import QuickMemo from './QuickMemo.jsx';
 
 /* ═══ useData hook ═══ */
@@ -858,40 +859,128 @@ function CENMode({ data, save }) {
 }
 
 /* ═══ DMNMode ═══ */
-function DMNMode({ data, save }) {
+function DMNMode({ data, save, onSwitchMode }) {
+  const [taskConfig, setTaskConfig] = useState(null);
+  const [taskOpen, setTaskOpen] = useState(null);
   const [sec,   setSec]  = useState(0);
   const [act,   setAct]  = useState(false);
   const [showM, setShowM]= useState(false);
-  const [showA, setShowA]= useState(true);
   const iv = useRef(null);
   const lp  = data.projects[data.projects.length - 1];
   const la  = lp?.anchors?.[lp.anchors.length - 1];
   const prompt = useMemo(() => pick(WANDER), []);
 
-  const start = () => { setAct(true); setShowA(false); iv.current = setInterval(() => setSec(s => s + 1), 1000); };
+  const start = () => { setAct(true); iv.current = setInterval(() => setSec(s => s + 1), 1000); };
   const stop  = () => { setAct(false); if (iv.current) clearInterval(iv.current); };
   useEffect(() => () => { if (iv.current) clearInterval(iv.current); }, []);
 
   const addSpark = (sp) => save({ ...data, sparks: [...data.sparks, { ...sp, projectId: lp?.id }] });
 
+  const durBtn = {
+    padding: '8px 18px', background: C.accent + '10', border: `1px solid ${C.accent}30`,
+    borderRadius: 8, fontSize: 15, fontWeight: 600, color: C.accent,
+    cursor: 'pointer', fontFamily: 'inherit',
+  };
+  const optBtn = {
+    width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
+    border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
+  };
+
+  if (taskConfig) {
+    return (
+      <MWTask
+        type={taskConfig.type}
+        duration={taskConfig.duration}
+        anchor={lp ? { topic: lp.title, text: la?.text } : null}
+        onSpark={addSpark}
+        onDone={(action) => {
+          setTaskConfig(null);
+          if (action === 'cw') onSwitchMode?.(MODES.CW);
+        }}
+      />
+    );
+  }
+
   return (
     <div style={S.dmnC}>
-      {showA && la && (
+      {!act && la && (
         <div style={S.dmnAnc}>
-          <div style={{ fontSize: 15, color: C.sub, marginBottom: 4 }}>⚓ 離脱前のアンカー</div>
+          <div style={{ fontSize: 15, color: C.sub, marginBottom: 4 }}>⚓ アンカー</div>
           <div style={{ fontSize: 18, color: C.accent, fontWeight: 600 }}>{lp?.title}</div>
           <div style={{ fontSize: 16, color: C.textLight, marginTop: 4 }}>{la.text}</div>
           {la.stuck && <div style={{ fontSize: 15, color: '#D08080', marginTop: 2 }}>⚠ {la.stuck}</div>}
         </div>
       )}
-      {!act && <p style={{ fontSize: 18, color: C.sub, textAlign: 'center', lineHeight: 1.8, maxWidth: 320 }}>{prompt}</p>}
-      <div style={{ fontSize: 68, fontWeight: 200, color: act ? C.accent : C.border, fontFamily: "'Courier New',monospace", letterSpacing: '0.05em' }}>
-        {fmtT(sec)}
-      </div>
-      {!act
-        ? <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: C.bg2, color: C.text, fontSize: 17 }} onClick={start}>離脱する 🌿</button>
-        : <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: '#fff', border: `1px solid ${C.border}`, color: C.textLight, fontSize: 17 }} onClick={stop}>戻ってきた</button>
-      }
+
+      {!act && (
+        <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 14, color: C.sub, textAlign: 'center', marginBottom: 4 }}>離脱方法を選んでください</div>
+
+          <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+            <button onClick={() => setTaskOpen(taskOpen === 'digit' ? null : 'digit')} style={optBtn}>
+              <span style={{ fontSize: 22 }}>🔢</span>
+              <div style={{ textAlign: 'left', flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>数字タスク</div>
+                <div style={{ fontSize: 14, color: C.sub }}>数字を眺めながら頭を遊ばせる</div>
+              </div>
+              <span style={{ fontSize: 13, color: C.sub }}>{taskOpen === 'digit' ? '▲' : '▼'}</span>
+            </button>
+            {taskOpen === 'digit' && (
+              <div style={{ display: 'flex', gap: 8, padding: '0 16px 14px', justifyContent: 'center' }}>
+                {[5, 8, 12].map(d => (
+                  <button key={d} onClick={() => setTaskConfig({ type: 'digit', duration: d })} style={durBtn}>{d}分</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+            <button onClick={() => setTaskOpen(taskOpen === 'rhythm' ? null : 'rhythm')} style={optBtn}>
+              <span style={{ fontSize: 22 }}>🎵</span>
+              <div style={{ textAlign: 'left', flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>リズムタスク</div>
+                <div style={{ fontSize: 14, color: C.sub }}>リズムに合わせて軽くタップ</div>
+              </div>
+              <span style={{ fontSize: 13, color: C.sub }}>{taskOpen === 'rhythm' ? '▲' : '▼'}</span>
+            </button>
+            {taskOpen === 'rhythm' && (
+              <div style={{ display: 'flex', gap: 8, padding: '0 16px 14px', justifyContent: 'center' }}>
+                {[5, 8, 10].map(d => (
+                  <button key={d} onClick={() => setTaskConfig({ type: 'rhythm', duration: d })} style={durBtn}>{d}分</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button onClick={start} style={{
+            padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
+            background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            <span style={{ fontSize: 22 }}>🌿</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>ただ離脱する</div>
+              <div style={{ fontSize: 14, color: C.sub }}>デバイスを置いて離れる</div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {!act && (
+        <p style={{ fontSize: 16, color: C.sub, textAlign: 'center', lineHeight: 1.8, maxWidth: 320, marginTop: 8 }}>{prompt}</p>
+      )}
+
+      {act && (
+        <>
+          <div style={{ fontSize: 68, fontWeight: 200, color: C.accent, fontFamily: "'Courier New',monospace", letterSpacing: '0.05em' }}>
+            {fmtT(sec)}
+          </div>
+          <button style={{ ...S.pri, width: 'auto', padding: '14px 40px', background: '#fff', border: `1px solid ${C.border}`, color: C.textLight, fontSize: 17 }} onClick={stop}>
+            戻ってきた
+          </button>
+        </>
+      )}
+
       <button style={S.dmnSpark} onClick={() => setShowM(true)}>💡 ひらめいた</button>
       {showM && <QuickMemo onSave={addSpark} onClose={() => setShowM(false)} />}
     </div>
@@ -962,7 +1051,7 @@ export default function App() {
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', minHeight: 0 }}>
         {mode === MODES.CEN && <CENMode data={data} save={save} />}
         {mode === MODES.CW  && <CWMode  data={data} save={save} />}
-        {mode === MODES.DMN && <DMNMode data={data} save={save} />}
+        {mode === MODES.DMN && <DMNMode data={data} save={save} onSwitchMode={setMode} />}
       </div>
 
       {/* ── settings modal ── */}
