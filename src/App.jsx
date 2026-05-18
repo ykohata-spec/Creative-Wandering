@@ -862,6 +862,7 @@ function CENMode({ data, save }) {
 function DMNMode({ data, save, onSwitchMode }) {
   const [taskConfig, setTaskConfig] = useState(null);
   const [taskOpen, setTaskOpen] = useState(null);
+  const [mwMin, setMwMin] = useState(5);
   const [sec,   setSec]  = useState(0);
   const [act,   setAct]  = useState(false);
   const [showM, setShowM]= useState(false);
@@ -926,10 +927,14 @@ function DMNMode({ data, save, onSwitchMode }) {
               <span style={{ fontSize: 13, color: C.sub }}>{taskOpen === 'digit' ? '▲' : '▼'}</span>
             </button>
             {taskOpen === 'digit' && (
-              <div style={{ display: 'flex', gap: 8, padding: '0 16px 14px', justifyContent: 'center' }}>
-                {[5, 8, 12].map(d => (
-                  <button key={d} onClick={() => setTaskConfig({ type: 'digit', duration: d })} style={durBtn}>{d}分</button>
-                ))}
+              <div style={{ padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="number" min={1} max={60} value={mwMin} onChange={e => setMwMin(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
+                    style={{ width: 56, padding: '6px 8px', border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 16, textAlign: 'center', fontFamily: 'inherit' }} />
+                  <span style={{ fontSize: 15, color: C.sub }}>分</span>
+                  <button onClick={() => setTaskConfig({ type: 'digit', duration: mwMin })} style={durBtn}>開始</button>
+                </div>
+                <div style={{ fontSize: 13, color: C.sub }}>推奨: 5〜12分</div>
               </div>
             )}
           </div>
@@ -944,10 +949,14 @@ function DMNMode({ data, save, onSwitchMode }) {
               <span style={{ fontSize: 13, color: C.sub }}>{taskOpen === 'rhythm' ? '▲' : '▼'}</span>
             </button>
             {taskOpen === 'rhythm' && (
-              <div style={{ display: 'flex', gap: 8, padding: '0 16px 14px', justifyContent: 'center' }}>
-                {[5, 8, 10].map(d => (
-                  <button key={d} onClick={() => setTaskConfig({ type: 'rhythm', duration: d })} style={durBtn}>{d}分</button>
-                ))}
+              <div style={{ padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="number" min={1} max={60} value={mwMin} onChange={e => setMwMin(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
+                    style={{ width: 56, padding: '6px 8px', border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 16, textAlign: 'center', fontFamily: 'inherit' }} />
+                  <span style={{ fontSize: 15, color: C.sub }}>分</span>
+                  <button onClick={() => setTaskConfig({ type: 'rhythm', duration: mwMin })} style={durBtn}>開始</button>
+                </div>
+                <div style={{ fontSize: 13, color: C.sub }}>推奨: 5〜12分</div>
               </div>
             )}
           </div>
