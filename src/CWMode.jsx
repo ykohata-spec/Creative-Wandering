@@ -206,7 +206,13 @@ export default function CWMode({ data, save }) {
       setPos({ ...posNear, __t: { x: cx - 100, y: cy - 14 } });
       setDist(0);
 
-      const entry = { id: uid(), topic: topic.trim(), memo, near, mid, far, createdAt: now() };
+      const entry = {
+        id: uid(), topic: topic.trim(),
+        memo, near, mid, far,
+        imageMemos: imageMemos.map(m => ({ id: m.id, text: m.text, imageId: m.imageId })),
+        unsplash: unsplashNodes.map(n => ({ id: n.id, thumb: n.thumb, full: n.full, alt: n.alt, query: n.query, text: n.text })),
+        createdAt: now(),
+      };
       save({ ...data, cwHistory: [entry, ...history].slice(0, 10) });
     } catch (e) {
       console.error('CW gen error:', e);
@@ -231,19 +237,23 @@ export default function CWMode({ data, save }) {
     setPan({ x: 0, y: 0 });
 
     if (entry.memo) {
-      const memo = (entry.memo || []).map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
-      const near = (entry.near || []).map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
-      const mid  = (entry.mid  || []).map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
-      const far  = (entry.far  || []).map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
-      const { laid: vn, np: pn, cx, cy } = doLayout([...memo, ...near]);
-      const { laid: vm, np: pm }         = doLayout([...memo, ...mid]);
-      const { laid: vf, np: pf }         = doLayout([...memo, ...far]);
+      const memo  = (entry.memo  || []).map((n, i) => ({ ...n, group: 1, id: 'memo_' + i }));
+      const imgMs = (entry.imageMemos || []).map((n, i) => ({ ...n, group: 1, id: 'img_' + i }));
+      const memoAll = [...memo, ...imgMs];
+      const near  = (entry.near  || []).map((n, i) => ({ ...n, group: 2, id: 'near_' + i }));
+      const mid   = (entry.mid   || []).map((n, i) => ({ ...n, group: 3, id: 'mid_' + i }));
+      const far   = (entry.far   || []).map((n, i) => ({ ...n, group: 4, id: 'far_' + i }));
+      const unsp  = (entry.unsplash || []).map((n, i) => ({ ...n, group: 5, id: 'unsp_' + i }));
+      const { laid: vn, np: pn, cx, cy } = doLayout([...memoAll, ...near]);
+      const { laid: vm, np: pm }         = doLayout([...memoAll, ...mid]);
+      const { laid: vf, np: pf }         = doLayout([...memoAll, ...far]);
+      const { laid: vi, np: pi }         = doLayout([...memoAll, ...unsp]);
       setMemoNodes(vn.filter(n => n.group === 1));
       setPools({
         near: vn.filter(n => n.group === 2), nearPos: pn,
         mid:  vm.filter(n => n.group === 3), midPos:  pm,
         far:  vf.filter(n => n.group === 4), farPos:  pf,
-        img:  [],                             imgPos:  {},
+        img:  vi.filter(n => n.group === 5), imgPos:  pi,
       });
       setPos({ ...pn, __t: { x: cx - 100, y: cy - 14 } });
     } else if (entry.nodes) {

@@ -60,7 +60,7 @@ export async function generateBuddies(apiKey, topic) {
   let lastErr = '';
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await callGemini(apiKey, BUDDY_GEN_SYS, `お題: ${topic}`, true, false);
+      const res = await callGemini(apiKey, BUDDY_GEN_SYS, `お題: ${topic}`, true, true);
       if (!res) { lastErr = '応答が空でした'; continue; }
       // 高負荷エラー検出
       if (/high demand|overloaded|unavailable|503|APIエラー|接続エラー/i.test(res)) {
@@ -88,9 +88,9 @@ export async function chatWithBuddy(apiKey, buddy, history, userMsg, userName) {
   const userLabel = userName || 'あなた';
   const log = history.map(m => `${m.role === 'user' ? userLabel : buddy.name}: ${m.text}`).join('\n');
   const prompt = (log ? `これまでの会話:\n${log}\n\n` : '') + `${userLabel}: ${userMsg}\n${buddy.name}: `;
-  // 高負荷時のリトライ
+  // 高負荷時のリトライ（雑談に思考は不要なので noThinking=true）
   for (let i = 0; i < 3; i++) {
-    const res = await callGemini(apiKey, sys, prompt, false, false);
+    const res = await callGemini(apiKey, sys, prompt, false, true);
     if (res && !/high demand|overloaded|unavailable|503/i.test(res)) return res;
     await new Promise(r => setTimeout(r, 1500 * (i + 1)));
   }
