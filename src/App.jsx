@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { C, S, MODES, TABS, SCENES, SIZES, WANDER, uid, pick, now, fmtD, fmtT, imgUrl } from './constants.js';
-import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
+import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getUnsplashKey, setUnsplashKey, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
 import { callGemini, CEN_SYS } from './gemini.js';
 import { memosToCSV, csvToMemos } from './csv.js';
 import CWMode from './CWMode.jsx';
@@ -57,10 +57,11 @@ function SuggestInput({ value, onChange, suggestions, placeholder, style: ext })
 /* ═══ Settings modal ═══ */
 function Settings({ onClose, onImport }) {
   const [key, setKey] = useState(getApiKey());
+  const [unsKey, setUnsKey] = useState(getUnsplashKey());
   const [importing, setImporting] = useState(false);
   const [msg, setMsg] = useState(null);
   const impRef = useRef(null);
-  const save = () => { setApiKey(key); onClose(); };
+  const save = () => { setApiKey(key); setUnsplashKey(unsKey); onClose(); };
 
   const doExport = async () => {
     const json = await exportAllData();
@@ -112,6 +113,24 @@ function Settings({ onClose, onImport }) {
             ※ このキーはあなたのブラウザにのみ保存されます。
           </p>
         )}
+
+        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 16, paddingTop: 16 }}>
+          <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 12 }}>
+            Unsplash Access Key（任意）<br />
+            <span style={{ fontSize: 14, color: C.sub }}>
+              Cloud Synapseで画像モードを使う場合に設定。<a href="https://unsplash.com/developers" target="_blank" rel="noreferrer" style={{ color: C.link }}>Unsplash Developers</a> で無料取得できます。
+            </span>
+          </p>
+          <input
+            type="password"
+            style={S.inp}
+            placeholder="Access Key (公開キー)"
+            value={unsKey}
+            onChange={e => setUnsKey(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && save()}
+          />
+        </div>
+
         <button style={S.pri} onClick={save}>保存する</button>
 
         {/* ── データ移行 ── */}

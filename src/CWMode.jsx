@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
 import { callGemini, CW_MEMO_SYS, CW_STIM_SYS } from './gemini.js';
-import { getApiKey, getImage } from './storage.js';
+import { getApiKey, getUnsplashKey, getImage } from './storage.js';
+import { fetchImagesForTopic } from './unsplash.js';
 import QuickMemo from './QuickMemo.jsx';
 
 const GROUP_COLORS = {
@@ -9,15 +10,17 @@ const GROUP_COLORS = {
   2: { bg: '#DBEAFE', border: '#3B82F6', color: '#2563EB' },
   3: { bg: '#FFF3D0', border: '#F59E0B', color: '#D97706' },
   4: { bg: '#EDE5FF', border: '#6E5DC6', color: '#5B4AA8' },
+  5: { bg: '#FFEEDB', border: '#E67E22', color: '#B85A0F' },
 };
 
 const DIST_INFO = [
   { l: '近い',     c: '#3B82F6', desc: 'お題のそばにある情景' },
   { l: 'やや遠い', c: '#F59E0B', desc: '感覚的に繋がるもの' },
   { l: '遠い',     c: '#6E5DC6', desc: '化学反応が起きそうなもの' },
+  { l: '🖼 画像',  c: '#E67E22', desc: 'お題に通じる風景・物体の写真' },
 ];
 
-/* ── 画像ノード用コンポーネント ── */
+/* ── 画像ノード用コンポーネント（メモ画像） ── */
 function ImageNode({ imageId, text }) {
   const [src, setSrc] = useState(null);
   useEffect(() => {
@@ -36,9 +39,19 @@ function ImageNode({ imageId, text }) {
   );
 }
 
+/* ── Unsplash画像ノード ── */
+function UnsplashNode({ thumb, alt, query }) {
+  return (
+    <div style={{ textAlign: 'center', minWidth: 140 }}>
+      <img src={thumb} alt={alt} style={{ width: 140, height: 100, objectFit: 'cover', borderRadius: 8, display: 'block', marginBottom: 4 }} loading="lazy" />
+      <div style={{ fontSize: 12, color: '#B85A0F', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</div>
+    </div>
+  );
+}
+
 export default function CWMode({ data, save }) {
   const [memoNodes, setMemoNodes] = useState([]);
-  const [pools,     setPools]     = useState({ near: [], mid: [], far: [] });
+  const [pools,     setPools]     = useState({ near: [], mid: [], far: [], img: [] });
   const [pos,       setPos]       = useState({});
   const [sizes,     setSizes]     = useState({});
   const [pan,       setPan]       = useState({ x: 0, y: 0 });
@@ -55,8 +68,10 @@ export default function CWMode({ data, save }) {
   const canvasRef = useRef(null);
   const history   = data.cwHistory || [];
 
-  const stimNodes = [pools.near, pools.mid, pools.far][dist] || [];
-  const visibleNodes = useMemo(() => [...memoNodes, ...stimNodes], [memoNodes, stimNodes]);
+  const stimNodes = [pools.near, pools.mid, pools.far, pools.img][dist] || [];
+  const visibleNodes = useMemo(() => (
+    dist === 3 ? stimNodes : [...memoNodes, ...stimNodes]
+  ), [memoNodes, stimNodes, dist]);
   const hasData = memoNodes.length > 0 || pools.near.length > 0;
 
   /* ── レイアウト ── */
@@ -163,11 +178,37 @@ export default function CWMode({ data, save }) {
       const stimMid  = viewMid.filter(n => n.group === 3);
       const stimFar  = viewFar.filter(n => n.group === 4);
 
+      // 画像モード用のノード構築
+      const allMemoImages = data.memos
+        .filter(m => m.imageId)
+        .map((m, i) => ({
+          id: 'imgmemo_' + i, text: m.title || m.content?.substring(0, 12) || '画像',
+          group: 5, imageId: m.imageId, isMemoImg: true,
+        }));
+
+      let unsplashNodes = [];
+      const unsKey = getUnsplashKey();
+      if (unsKey) {
+        setLoadMsg('画像を検索中…');
+        try {
+          const { images } = await fetchImagesForTopic(apiKey, unsKey, topic);
+          unsplashNodes = images.map((p, i) => ({
+            id: 'unsp_' + i, group: 5, thumb: p.thumb, full: p.full,
+            alt: p.alt, query: p.query, text: p.query,
+          }));
+        } catch (e) {
+          console.warn('Unsplash fetch failed:', e);
+        }
+      }
+      const imgPool = [...allMemoImages, ...unsplashNodes];
+      const { laid: viewImg, np: posImg } = doLayout(imgPool);
+
       setMemoNodes(memoLaid);
       setPools({
         near: stimNear, nearPos: posNear,
         mid:  stimMid,  midPos:  posMid,
         far:  stimFar,  farPos:  posFar,
+        img:  viewImg,  imgPos:  posImg,
       });
       setPos({ ...posNear, __t: { x: cx - 100, y: cy - 14 } });
       setDist(0);
@@ -184,7 +225,7 @@ export default function CWMode({ data, save }) {
 
   /* ── 距離切り替え ── */
   const switchDist = (level) => {
-    const poolPos = [pools.nearPos, pools.midPos, pools.farPos][level];
+    const poolPos = [pools.nearPos, pools.midPos, pools.farPos, pools.imgPos][level];
     if (!poolPos) return;
     setDist(level);
     setPos(prev => ({ ...poolPos, __t: prev.__t || { x: 400, y: 300 } }));
@@ -209,6 +250,7 @@ export default function CWMode({ data, save }) {
         near: vn.filter(n => n.group === 2), nearPos: pn,
         mid:  vm.filter(n => n.group === 3), midPos:  pm,
         far:  vf.filter(n => n.group === 4), farPos:  pf,
+        img:  [],                             imgPos:  {},
       });
       setPos({ ...pn, __t: { x: cx - 100, y: cy - 14 } });
     } else if (entry.nodes) {
@@ -216,7 +258,7 @@ export default function CWMode({ data, save }) {
         n._anim != null ? n : { ...n, _anim: i % 6, _dur: 10 + i * 0.4, _delay: -i * 1.2 }
       );
       setMemoNodes(restoredNodes);
-      setPools({ near: [], mid: [], far: [] });
+      setPools({ near: [], mid: [], far: [], img: [] });
       const { np } = doLayout(restoredNodes);
       setPos(np);
     }
@@ -305,18 +347,21 @@ export default function CWMode({ data, save }) {
           {hasData && (
             <div style={{ background: C.bg2, borderRadius: 10, padding: 14, marginBottom: 12 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 10 }}>距離パラメータ</div>
-              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                 {DIST_INFO.map((d, i) => (
                   <button
                     key={i}
                     onClick={() => switchDist(i)}
+                    disabled={i === 3 && (!pools.img || pools.img.length === 0)}
                     style={{
-                      flex: 1, padding: '8px 4px', borderRadius: 8,
+                      flex: '1 1 calc(50% - 4px)', padding: '8px 4px', borderRadius: 8,
                       border: `1.5px solid ${dist === i ? d.c : C.border}`,
                       background: dist === i ? d.c + '15' : '#fff',
                       color: dist === i ? d.c : C.sub,
-                      fontSize: 14, fontWeight: dist === i ? 700 : 400,
-                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+                      fontSize: 13, fontWeight: dist === i ? 700 : 400,
+                      cursor: i === 3 && (!pools.img || pools.img.length === 0) ? 'not-allowed' : 'pointer',
+                      opacity: i === 3 && (!pools.img || pools.img.length === 0) ? 0.4 : 1,
+                      fontFamily: 'inherit', transition: 'all 0.2s',
                     }}
                   >
                     {d.l}
@@ -327,10 +372,12 @@ export default function CWMode({ data, save }) {
                 {DIST_INFO[dist].desc}
               </div>
               <div style={{ fontSize: 13, color: C.sub, textAlign: 'center', marginTop: 4 }}>
-                メモ {memoNodes.length} + 刺激 {stimNodes.length} 表示中
+                {dist === 3
+                  ? `画像 ${stimNodes.length} 表示中`
+                  : `メモ ${memoNodes.length} + 刺激 ${stimNodes.length} 表示中`}
               </div>
               <div style={{ fontSize: 12, color: C.sub, textAlign: 'center', marginTop: 2 }}>
-                [近{pools.near?.length || 0} / やや遠{pools.mid?.length || 0} / 遠{pools.far?.length || 0}]
+                [近{pools.near?.length || 0} / やや遠{pools.mid?.length || 0} / 遠{pools.far?.length || 0} / 画{pools.img?.length || 0}]
               </div>
             </div>
           )}
@@ -342,6 +389,7 @@ export default function CWMode({ data, save }) {
             <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', flexShrink: 0 }} />近い — お題のそばの情景</div>
             <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />やや遠い — 感覚で繋がる</div>
             <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#6E5DC6', flexShrink: 0 }} />遠い — 化学反応の種</div>
+            <div style={{ fontSize: 14, color: C.sub, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#E67E22', flexShrink: 0 }} />🖼 画像 — メモ写真 + Unsplash</div>
           </div>
 
           <div style={{ fontSize: 13, color: C.sub, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
@@ -432,7 +480,11 @@ export default function CWMode({ data, save }) {
           const p = pos[n.id]; if (!p) return null;
           const gc = GROUP_COLORS[n.group] || GROUP_COLORS[2];
           const scale = sizes[n.id] || 1;
-          const isImg = n.group === 1 && n.imageId;
+          const isMemoImg = n.group === 1 && n.imageId;
+          const isImgMode = n.group === 5;
+          const isUnsplash = isImgMode && n.thumb;
+          const isMemoImgInImgMode = isImgMode && n.imageId;
+          const isImageNode = isMemoImg || isImgMode;
           return (
             <div
               key={n.id}
@@ -451,21 +503,23 @@ export default function CWMode({ data, save }) {
               }}
             >
               <div style={{
-                padding: isImg ? '8px' : '8px 16px',
+                padding: isImageNode ? '8px' : '8px 16px',
                 background: gc.bg,
                 border: `1.5px solid ${gc.border}`,
-                borderRadius: isImg ? 12 : 20,
+                borderRadius: isImageNode ? 12 : 20,
                 fontSize: 16, fontWeight: 600, color: gc.color,
                 boxShadow: `0 2px 8px ${gc.border}30`,
                 whiteSpace: 'normal',
-                maxWidth: isImg ? undefined : 360,
+                maxWidth: isImageNode ? undefined : 360,
                 lineHeight: 1.5,
                 transform: scale !== 1 ? `scale(${scale})` : undefined,
                 transformOrigin: 'top left',
                 transition: 'transform 0.2s ease',
                 display: 'inline-block',
               }}>
-                {isImg ? (
+                {isUnsplash ? (
+                  <UnsplashNode thumb={n.thumb} alt={n.alt} query={n.query} />
+                ) : isMemoImgInImgMode || isMemoImg ? (
                   <ImageNode imageId={n.imageId} text={n.text} />
                 ) : (
                   <span>{n.text}</span>

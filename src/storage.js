@@ -1,15 +1,19 @@
 /* ─── localStorage ─── */
 const LS = {
-  memos:    'cw-memos-v4',
-  projects: 'cw-proj-v4',
-  sparks:   'cw-sparks-v4',
-  chat:     'cw-chat-v4',
-  cwHist:   'cw-cwhist-v4',
-  apiKey:   'cw-gemini-key',
+  memos:        'cw-memos-v4',
+  projects:     'cw-proj-v4',
+  sparks:       'cw-sparks-v4',
+  chat:         'cw-chat-v4',
+  cwHist:       'cw-cwhist-v4',
+  apiKey:       'cw-gemini-key',
+  unsplashKey:  'cw-unsplash-key',
 };
 
 export const getApiKey = ()  => localStorage.getItem(LS.apiKey) || '';
 export const setApiKey = (k) => localStorage.setItem(LS.apiKey, k.trim());
+
+export const getUnsplashKey = ()  => localStorage.getItem(LS.unsplashKey) || '';
+export const setUnsplashKey = (k) => localStorage.setItem(LS.unsplashKey, k.trim());
 
 export const emptyData = () => ({
   memos:       [],
