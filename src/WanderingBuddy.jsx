@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { getApiKey } from './storage.js';
+import { getApiKey, getUserName } from './storage.js';
 import { generateBuddies, chatWithBuddy } from './buddy.js';
 import QuickMemo from './QuickMemo.jsx';
 
@@ -106,7 +106,8 @@ export default function WanderingBuddy({ data, save }) {
     setTimeout(async () => {
       setSending(true);
       const apiKey = getApiKey();
-      const opener = await chatWithBuddy(apiKey, buddy, [], '(雑談を始める。挨拶代わりに、最近の自分の生活の断片を1つだけ話して、軽く相手に「最近どう？」みたいに振ってください。短く。)');
+      const userName = getUserName();
+      const opener = await chatWithBuddy(apiKey, buddy, [], '(雑談を始める。挨拶代わりに、最近の自分の生活の断片を1つだけ話して、軽く相手に「最近どう？」みたいに振ってください。短く。)', userName);
       setMessages([{ role: 'buddy', text: opener, ts: now() }]);
       setSending(false);
     }, 100);
@@ -120,9 +121,16 @@ export default function WanderingBuddy({ data, save }) {
     setMessages(next);
     setSending(true);
     const apiKey = getApiKey();
-    const reply = await chatWithBuddy(apiKey, activeBuddy, next, text);
+    const userName = getUserName();
+    const reply = await chatWithBuddy(apiKey, activeBuddy, next, text, userName);
     setMessages([...next, { role: 'buddy', text: reply, ts: now() }]);
     setSending(false);
+  };
+
+  const isActiveFav = !!buddies.find(b => b.id === activeBuddy?.id && b.isFavorite);
+  const toggleActiveFav = () => {
+    if (!activeBuddy) return;
+    toggleFav(activeBuddy);
   };
 
   const endChat = () => {
@@ -160,6 +168,22 @@ export default function WanderingBuddy({ data, save }) {
             <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{activeBuddy.name}</div>
             <div style={{ fontSize: 13, color: C.sub }}>{activeBuddy.occupation}</div>
           </div>
+          <button
+            onClick={toggleActiveFav}
+            style={{
+              background: 'none', border: 'none', fontSize: 24, cursor: 'pointer',
+              color: isActiveFav ? '#F59E0B' : C.border, padding: '4px 8px',
+            }}
+            title={isActiveFav ? 'お気に入り解除' : 'お気に入りに保存'}
+          >{isActiveFav ? '★' : '☆'}</button>
+          <button
+            onClick={() => setShowMemo(true)}
+            style={{
+              background: '#FFF8E1', border: `1px solid ${C.accent}`, borderRadius: 18,
+              padding: '6px 14px', fontSize: 14, color: '#7A6010', cursor: 'pointer',
+              fontFamily: 'inherit', fontWeight: 600,
+            }}
+          >💡 ひらめいた</button>
           <button style={{ ...S.txtBtn, fontSize: 14 }} onClick={endChat}>終了</button>
         </div>
 
@@ -187,14 +211,19 @@ export default function WanderingBuddy({ data, save }) {
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
+            onKeyDown={e => {
+              if (e.key !== 'Enter') return;
+              if (e.shiftKey) return;
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+              e.preventDefault();
+              send();
+            }}
             placeholder="どうでもいい話を…"
             style={{ ...S.inp, margin: 0, flex: 1 }}
             disabled={sending}
           />
           <button onClick={send} disabled={sending || !input.trim()} style={{ ...S.pri, width: 'auto', padding: '0 18px' }}>送信</button>
         </div>
-        <button style={S.dmnSpark} onClick={() => setShowMemo(true)}>💡 ひらめいた</button>
         {showMemo && <QuickMemo onSave={addSpark} onClose={() => setShowMemo(false)} />}
       </div>
     );

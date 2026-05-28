@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { C, S, MODES, TABS, SCENES, SIZES, WANDER, uid, pick, now, fmtD, fmtT, imgUrl } from './constants.js';
-import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getUnsplashKey, setUnsplashKey, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
+import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getUnsplashKey, setUnsplashKey, getUserName, setUserName, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
 import { callGemini, CEN_SYS } from './gemini.js';
 import { memosToCSV, csvToMemos } from './csv.js';
 import CWMode from './CWMode.jsx';
@@ -58,10 +58,11 @@ function SuggestInput({ value, onChange, suggestions, placeholder, style: ext })
 function Settings({ onClose, onImport }) {
   const [key, setKey] = useState(getApiKey());
   const [unsKey, setUnsKey] = useState(getUnsplashKey());
+  const [uName, setUName] = useState(getUserName());
   const [importing, setImporting] = useState(false);
   const [msg, setMsg] = useState(null);
   const impRef = useRef(null);
-  const save = () => { setApiKey(key); setUnsplashKey(unsKey); onClose(); };
+  const save = () => { setApiKey(key); setUnsplashKey(unsKey); setUserName(uName); onClose(); };
 
   const doExport = async () => {
     const json = await exportAllData();
@@ -113,6 +114,23 @@ function Settings({ onClose, onImport }) {
             ※ このキーはあなたのブラウザにのみ保存されます。
           </p>
         )}
+
+        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 16, paddingTop: 16 }}>
+          <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 8 }}>
+            あなたの呼ばれたい名前（任意）<br />
+            <span style={{ fontSize: 14, color: C.sub }}>
+              Wandering Buddyの会話相手があなたを呼ぶときに使われます。
+            </span>
+          </p>
+          <input
+            type="text"
+            style={S.inp}
+            placeholder="例: ヨーコ、田中"
+            value={uName}
+            onChange={e => setUName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && save()}
+          />
+        </div>
 
         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 16, paddingTop: 16 }}>
           <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 12 }}>
