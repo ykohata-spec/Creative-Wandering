@@ -7,6 +7,8 @@ const LS = {
   cwHist:       'cw-cwhist-v4',
   apiKey:       'cw-gemini-key',
   unsplashKey:  'cw-unsplash-key',
+  buddies:      'cw-buddies-v1',
+  buddyChats:   'cw-buddychats-v1',
 };
 
 export const getApiKey = ()  => localStorage.getItem(LS.apiKey) || '';
@@ -22,6 +24,8 @@ export const emptyData = () => ({
   chatHistory: [],
   rallyCount:  0,
   cwHistory:   [],
+  buddies:     [],
+  buddyChats:  [],
 });
 
 export function loadData() {
@@ -34,6 +38,8 @@ export function loadData() {
     if (v) { const c = JSON.parse(v); d.chatHistory = c.h || []; d.rallyCount = c.r || 0; }
   } catch {}
   try { const v = localStorage.getItem(LS.cwHist);   if (v) d.cwHistory   = JSON.parse(v); } catch {}
+  try { const v = localStorage.getItem(LS.buddies);    if (v) d.buddies    = JSON.parse(v); } catch {}
+  try { const v = localStorage.getItem(LS.buddyChats); if (v) d.buddyChats = JSON.parse(v); } catch {}
   return d;
 }
 
@@ -43,6 +49,8 @@ export function saveData(d) {
   try { localStorage.setItem(LS.sparks,   JSON.stringify(d.sparks));      } catch {}
   try { localStorage.setItem(LS.chat,     JSON.stringify({ h: d.chatHistory, r: d.rallyCount })); } catch {}
   try { localStorage.setItem(LS.cwHist,   JSON.stringify(d.cwHistory || [])); } catch {}
+  try { localStorage.setItem(LS.buddies,    JSON.stringify(d.buddies    || [])); } catch {}
+  try { localStorage.setItem(LS.buddyChats, JSON.stringify(d.buddyChats || [])); } catch {}
 }
 
 export function clearAllData() {

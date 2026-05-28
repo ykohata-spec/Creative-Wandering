@@ -4,6 +4,7 @@ import { callGemini, CW_MEMO_SYS, CW_STIM_SYS } from './gemini.js';
 import { getApiKey, getUnsplashKey, getImage } from './storage.js';
 import { fetchImagesForTopic } from './unsplash.js';
 import QuickMemo from './QuickMemo.jsx';
+import WanderingBuddy from './WanderingBuddy.jsx';
 
 const GROUP_COLORS = {
   1: { bg: '#EEFFC2', border: '#8BBE2C', color: '#5A8010' },
@@ -50,6 +51,7 @@ function UnsplashNode({ thumb, alt, query }) {
 }
 
 export default function CWMode({ data, save }) {
+  const [cwTab, setCwTab] = useState('synapse');
   const [memoNodes, setMemoNodes] = useState([]);
   const [pools,     setPools]     = useState({ near: [], mid: [], far: [], img: [] });
   const [pos,       setPos]       = useState({});
@@ -309,14 +311,50 @@ export default function CWMode({ data, save }) {
   const addSpark = (sp) => save({ ...data, sparks: [...data.sparks, sp] });
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 680;
 
+  const tabBar = (
+    <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, background: '#FDFBF8', flexShrink: 0 }}>
+      <button
+        onClick={() => setCwTab('synapse')}
+        style={{
+          flex: 1, padding: '12px 8px', border: 'none', background: 'transparent',
+          fontFamily: 'inherit', fontSize: 15, fontWeight: cwTab === 'synapse' ? 700 : 500,
+          color: cwTab === 'synapse' ? C.accent2 : C.sub,
+          borderBottom: `2.5px solid ${cwTab === 'synapse' ? C.accent2 : 'transparent'}`,
+          cursor: 'pointer', transition: 'all 0.2s',
+        }}
+      >☁️ Cloud Synapse</button>
+      <button
+        onClick={() => setCwTab('buddy')}
+        style={{
+          flex: 1, padding: '12px 8px', border: 'none', background: 'transparent',
+          fontFamily: 'inherit', fontSize: 15, fontWeight: cwTab === 'buddy' ? 700 : 500,
+          color: cwTab === 'buddy' ? C.accent2 : C.sub,
+          borderBottom: `2.5px solid ${cwTab === 'buddy' ? C.accent2 : 'transparent'}`,
+          cursor: 'pointer', transition: 'all 0.2s',
+        }}
+      >☕ Wandering Buddy</button>
+    </div>
+  );
+
+  if (cwTab === 'buddy') {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {tabBar}
+        <WanderingBuddy data={data} save={save} />
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{ ...S.cenC, flexDirection: 'row' }}
-      onMouseMove={onMouseMove}
-      onMouseUp={endAll}
-      onTouchMove={onTouchMove}
-      onTouchEnd={endAll}
-    >
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {tabBar}
+      <div
+        style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}
+        onMouseMove={onMouseMove}
+        onMouseUp={endAll}
+        onTouchMove={onTouchMove}
+        onTouchEnd={endAll}
+      >
       {/* ── サイドパネル ── */}
       {(!isMobile || sideOpen) && (
         <div style={{
@@ -545,6 +583,7 @@ export default function CWMode({ data, save }) {
         @keyframes cwFloat4 { 0%,100%{transform:translate(0,0)}   50%{transform:translate(6px,4px)}   }
         @keyframes cwFloat5 { 0%,100%{transform:translate(0,0)}   50%{transform:translate(-4px,7px)}  }
       `}</style>
+      </div>
     </div>
   );
 }
