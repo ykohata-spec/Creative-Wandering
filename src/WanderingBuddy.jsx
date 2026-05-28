@@ -63,6 +63,7 @@ export default function WanderingBuddy({ data, save }) {
   const [tab, setTab] = useState(TAB.ROSTER);
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState(null);
   const [activeBuddy, setActiveBuddy] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -82,9 +83,14 @@ export default function WanderingBuddy({ data, save }) {
     if (!topic.trim()) return;
     setLoading(true);
     setCandidates([]);
+    setErrMsg(null);
     const apiKey = getApiKey();
-    const buds = await generateBuddies(apiKey, topic.trim());
-    setCandidates(buds.map(b => ({ ...b, id: 'b_' + uid(), topicSeed: topic.trim(), emoji: pickEmoji(b) })));
+    const result = await generateBuddies(apiKey, topic.trim());
+    if (result.error) {
+      setErrMsg(result.error);
+    } else {
+      setCandidates(result.buddies.map(b => ({ ...b, id: 'b_' + uid(), topicSeed: topic.trim(), emoji: pickEmoji(b) })));
+    }
     setLoading(false);
   };
 
@@ -251,6 +257,14 @@ export default function WanderingBuddy({ data, save }) {
           <button style={{ ...S.pri, fontSize: 16, background: C.accent2 }} onClick={generate} disabled={loading || !topic.trim()}>
             {loading ? '呼んでます…' : '👥 3人呼ぶ'}
           </button>
+          {errMsg && (
+            <div style={{
+              marginTop: 12, padding: '10px 12px', background: '#FFF1F0',
+              border: '1px solid #FCA5A5', borderRadius: 8, fontSize: 14, color: '#B91C1C', lineHeight: 1.5,
+            }}>
+              ⚠ {errMsg}
+            </div>
+          )}
         </div>
 
         {candidates.length > 0 && (
