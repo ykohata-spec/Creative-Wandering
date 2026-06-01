@@ -10,6 +10,7 @@ const LS = {
   buddies:      'cw-buddies-v1',
   buddyChats:   'cw-buddychats-v1',
   userName:     'cw-user-name',
+  profile:      'cw-profile-v1',
 };
 
 export const getApiKey = ()  => localStorage.getItem(LS.apiKey) || '';
@@ -20,6 +21,9 @@ export const setUnsplashKey = (k) => localStorage.setItem(LS.unsplashKey, k.trim
 
 export const getUserName = ()  => localStorage.getItem(LS.userName) || '';
 export const setUserName = (n) => localStorage.setItem(LS.userName, n.trim());
+
+export const getProfile = ()  => localStorage.getItem(LS.profile) || '';
+export const setProfile = (p) => localStorage.setItem(LS.profile, p.trim());
 
 export const emptyData = () => ({
   memos:       [],

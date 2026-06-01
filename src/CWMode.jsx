@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { callGemini, CW_MEMO_SYS, CW_STIM_SYS } from './gemini.js';
-import { getApiKey, getUnsplashKey, getImage } from './storage.js';
+import { callGemini, CW_MEMO_SYS, CW_STIM_SYS, withProfile } from './gemini.js';
+import { getApiKey, getUnsplashKey, getProfile, getImage } from './storage.js';
 import { fetchImagesForTopic } from './unsplash.js';
 import QuickMemo from './QuickMemo.jsx';
 import WanderingBuddy from './WanderingBuddy.jsx';
@@ -138,13 +138,15 @@ export default function CWMode({ data, save }) {
       ? '\n\nメモ箱:\n' + data.memos.map(m => `[${m.tag || ''}] ${m.title || ''}: ${m.content}`).join('\n')
       : '\n\nメモ箱: (空)';
 
+    const profile = getProfile();
+
     try {
       setLoadMsg('メモを解析中…(1/2)');
-      const r1 = await callWithRetry(apiKey, CW_MEMO_SYS, 'お題: ' + topic + '\n' + memoCtx, 'memo');
+      const r1 = await callWithRetry(apiKey, withProfile(CW_MEMO_SYS, profile), 'お題: ' + topic + '\n' + memoCtx, 'memo');
 
       await delay(2000);
       setLoadMsg('3距離の刺激を一括生成中…(2/2)');
-      const r2 = await callWithRetry(apiKey, CW_STIM_SYS, 'お題: ' + topic, 'stim');
+      const r2 = await callWithRetry(apiKey, withProfile(CW_STIM_SYS, profile), 'お題: ' + topic, 'stim');
 
       setLoadMsg('空間を構築中…');
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { C, S, MODES, TABS, SCENES, SIZES, WANDER, uid, pick, now, fmtD, fmtT, imgUrl } from './constants.js';
-import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getUnsplashKey, setUnsplashKey, getUserName, setUserName, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
+import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getUnsplashKey, setUnsplashKey, getUserName, setUserName, getProfile, setProfile, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
 import { callGemini, CEN_SYS } from './gemini.js';
 import { memosToCSV, csvToMemos } from './csv.js';
 import CWMode from './CWMode.jsx';
@@ -59,10 +59,11 @@ function Settings({ onClose, onImport }) {
   const [key, setKey] = useState(getApiKey());
   const [unsKey, setUnsKey] = useState(getUnsplashKey());
   const [uName, setUName] = useState(getUserName());
+  const [prof, setProf] = useState(getProfile());
   const [importing, setImporting] = useState(false);
   const [msg, setMsg] = useState(null);
   const impRef = useRef(null);
-  const save = () => { setApiKey(key); setUnsplashKey(unsKey); setUserName(uName); onClose(); };
+  const save = () => { setApiKey(key); setUnsplashKey(unsKey); setUserName(uName); setProfile(prof); onClose(); };
 
   const doExport = async () => {
     const json = await exportAllData();
@@ -130,6 +131,24 @@ function Settings({ onClose, onImport }) {
             onChange={e => setUName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && save()}
           />
+        </div>
+
+        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 16, paddingTop: 16 }}>
+          <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 8 }}>
+            自分らしさプロファイル（任意）<br />
+            <span style={{ fontSize: 14, color: C.sub }}>
+              「きみのほん」のAI傾向分析の結果などを貼り付けると、Cloud Synapseの刺激語生成やWandering Buddyのキャラ生成があなた寄りに調整されます。600〜800字程度推奨。
+            </span>
+          </p>
+          <textarea
+            style={{ ...S.inp, minHeight: 140 }}
+            placeholder="例: あなたは『静かな再生』というテーマに繰り返し惹かれている人物像。孤独や距離感を肯定的に扱う作品を高く評価し…"
+            value={prof}
+            onChange={e => setProf(e.target.value)}
+          />
+          <div style={{ fontSize: 13, color: C.sub, marginTop: -4, marginBottom: 8 }}>
+            {prof ? `${prof.length} 文字` : '未設定'}
+          </div>
         </div>
 
         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 16, paddingTop: 16 }}>

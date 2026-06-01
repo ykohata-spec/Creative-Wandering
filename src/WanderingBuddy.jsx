@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { getApiKey, getUserName } from './storage.js';
+import { getApiKey, getUserName, getProfile } from './storage.js';
 import { generateBuddies, chatWithBuddy } from './buddy.js';
 import QuickMemo from './QuickMemo.jsx';
 
@@ -85,7 +85,8 @@ export default function WanderingBuddy({ data, save }) {
     setCandidates([]);
     setErrMsg(null);
     const apiKey = getApiKey();
-    const result = await generateBuddies(apiKey, topic.trim());
+    const profile = getProfile();
+    const result = await generateBuddies(apiKey, topic.trim(), profile);
     if (result.error) {
       setErrMsg(result.error);
     } else {
