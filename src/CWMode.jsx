@@ -57,6 +57,7 @@ export default function CWMode({ data, save }) {
   const [pos,       setPos]       = useState({});
   const [sizes,     setSizes]     = useState({});
   const [pan,       setPan]       = useState({ x: 0, y: 0 });
+  const [zoom,      setZoom]      = useState(1);
   const [loading,   setLoading]   = useState(false);
   const [loadMsg,   setLoadMsg]   = useState('');
   const [topic,     setTopic]     = useState('外国人観光客に防災意識を持ってもらうアイデア');
@@ -284,14 +285,14 @@ export default function CWMode({ data, save }) {
   const startDrag = (id, e) => {
     const p = pos[id]; if (!p) return;
     setDrag(id);
-    setOff({ x: e.clientX - p.x - pan.x, y: e.clientY - p.y - pan.y });
+    setOff({ x: e.clientX - (p.x * zoom + pan.x), y: e.clientY - (p.y * zoom + pan.y) });
     e.preventDefault();
     e.stopPropagation();
   };
 
   const onMouseMove = (e) => {
     if (drag) {
-      setPos(p => ({ ...p, [drag]: { x: e.clientX - off.x - pan.x, y: e.clientY - off.y - pan.y } }));
+      setPos(p => ({ ...p, [drag]: { x: (e.clientX - off.x - pan.x) / zoom, y: (e.clientY - off.y - pan.y) / zoom } }));
     } else if (panStart) {
       setPan({
         x: panStart.panX + e.clientX - panStart.mouseX,
@@ -306,22 +307,51 @@ export default function CWMode({ data, save }) {
     setPanStart({ mouseX: e.clientX, mouseY: e.clientY, panX: pan.x, panY: pan.y });
   };
 
+  /* ── ホイール/2本指でズーム ── */
+  const onWheel = (e) => {
+    e.preventDefault();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    // 拡大率は控えめに
+    const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+    const newZoom = Math.max(0.25, Math.min(2, zoom * factor));
+    // マウス位置を中心にズーム
+    const nx = mx - (mx - pan.x) * (newZoom / zoom);
+    const ny = my - (my - pan.y) * (newZoom / zoom);
+    setZoom(newZoom);
+    setPan({ x: nx, y: ny });
+  };
+
+  const fitToScreen = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
   /* ── ドラッグ（タッチ）── */
   const startTouch = (id, e) => {
     const t = e.touches[0];
     const p = pos[id]; if (!p) return;
     setDrag(id);
-    setOff({ x: t.clientX - p.x - pan.x, y: t.clientY - p.y - pan.y });
+    setOff({ x: t.clientX - (p.x * zoom + pan.x), y: t.clientY - (p.y * zoom + pan.y) });
   };
   const onTouchMove = (e) => {
     if (!drag) return;
     const t = e.touches[0];
-    setPos(p => ({ ...p, [drag]: { x: t.clientX - off.x - pan.x, y: t.clientY - off.y - pan.y } }));
+    setPos(p => ({ ...p, [drag]: { x: (t.clientX - off.x - pan.x) / zoom, y: (t.clientY - off.y - pan.y) / zoom } }));
     e.preventDefault();
   };
 
   const addSpark = (sp) => save({ ...data, sparks: [...data.sparks, sp] });
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 680;
+
+  const zoomBtnStyle = {
+    width: 28, height: 28, border: 'none', background: C.bg2,
+    borderRadius: '50%', fontSize: 17, fontWeight: 700, color: C.text,
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'inherit', padding: 0,
+  };
 
   const tabBar = (
     <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, background: '#FDFBF8', flexShrink: 0 }}>
@@ -432,7 +462,8 @@ export default function CWMode({ data, save }) {
           </div>
 
           <div style={{ fontSize: 13, color: C.sub, marginBottom: 2 }}>💡 ダブルクリックでサイズ変更</div>
-          <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>🖐 背景ドラッグでスクロール</div>
+          <div style={{ fontSize: 13, color: C.sub, marginBottom: 2 }}>🖐 背景ドラッグでスクロール</div>
+          <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>🔍 ホイール/2本指で拡大縮小</div>
 
           {/* 履歴 */}
           {history.length > 0 && (
@@ -480,6 +511,7 @@ export default function CWMode({ data, save }) {
           cursor: panStart ? 'grabbing' : 'default',
         }}
         onMouseDown={startCanvasPan}
+        onWheel={onWheel}
       >
         {isMobile && !sideOpen && (
           <button
@@ -490,6 +522,30 @@ export default function CWMode({ data, save }) {
           </button>
         )}
 
+        {/* ズームコントロール */}
+        {hasData && (
+          <div style={{
+            position: 'absolute', top: 12, right: 12, zIndex: 15,
+            display: 'flex', gap: 6, alignItems: 'center',
+            background: '#fff', border: `1px solid ${C.border}`, borderRadius: 22,
+            padding: '4px 6px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <button onClick={() => setZoom(z => Math.max(0.25, z / 1.15))} style={zoomBtnStyle}>−</button>
+            <div style={{ fontSize: 13, color: C.sub, minWidth: 38, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
+              {Math.round(zoom * 100)}%
+            </div>
+            <button onClick={() => setZoom(z => Math.min(2, z * 1.15))} style={zoomBtnStyle}>＋</button>
+            <button onClick={fitToScreen} style={{ ...zoomBtnStyle, width: 'auto', padding: '0 10px', fontSize: 13 }}>全体</button>
+          </div>
+        )}
+
+        {/* zoom/pan 適用ラッパー */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: '0 0',
+          pointerEvents: 'none',
+        }}>
         {/* トピックラベル */}
         {hasData && pos.__t && (
           <div
@@ -497,8 +553,8 @@ export default function CWMode({ data, save }) {
             onTouchStart={e => startTouch('__t', e)}
             style={{
               position: 'absolute',
-              left: pos.__t.x + pan.x,
-              top:  pos.__t.y + pan.y,
+              left: pos.__t.x,
+              top:  pos.__t.y,
               padding: '10px 28px',
               background: 'linear-gradient(135deg,#8BBE2C,#A0D940)',
               borderRadius: 28,
@@ -508,6 +564,7 @@ export default function CWMode({ data, save }) {
               boxShadow: '0 4px 16px rgba(139,190,44,0.3)',
               whiteSpace: 'nowrap',
               touchAction: 'none',
+              pointerEvents: 'auto',
             }}
           >
             {topic}
@@ -530,13 +587,14 @@ export default function CWMode({ data, save }) {
               onDoubleClick={() => cycleSize(n.id)}
               style={{
                 position: 'absolute',
-                left: p.x + pan.x,
-                top:  p.y + pan.y,
+                left: p.x,
+                top:  p.y,
                 animation: drag === n.id ? 'none' : `cwFloat${n._anim} ${n._dur}s ease-in-out ${n._delay}s infinite`,
                 zIndex: drag === n.id ? 10 : n.group === 1 ? 3 : 2,
                 cursor: drag === n.id ? 'grabbing' : 'grab',
                 userSelect: 'none',
                 touchAction: 'none',
+                pointerEvents: 'auto',
               }}
             >
               <div style={{
@@ -565,6 +623,7 @@ export default function CWMode({ data, save }) {
             </div>
           );
         })}
+        </div>
 
         {/* 空状態 */}
         {!hasData && !loading && (
