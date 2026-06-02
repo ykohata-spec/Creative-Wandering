@@ -4,7 +4,7 @@ import { getApiKey, getUserName, getProfile } from './storage.js';
 import { generateBuddies, chatWithBuddy } from './buddy.js';
 import QuickMemo from './QuickMemo.jsx';
 
-const TAB = { ROSTER: 'roster', CHAT: 'chat' };
+const TAB = { ROSTER: 'roster', CHAT: 'chat', REPLAY: 'replay' };
 
 function BuddyCard({ buddy, isFavorite, onSelect, onToggleFav }) {
   return (
@@ -70,10 +70,15 @@ export default function WanderingBuddy({ data, save }) {
   const [sending, setSending] = useState(false);
   const [showMemo, setShowMemo] = useState(false);
   const [showFavs, setShowFavs] = useState(true);
+  const [showSessions, setShowSessions] = useState(true);
+  const [showChats, setShowChats] = useState(true);
+  const [replayChat, setReplayChat] = useState(null);
   const chatBoxRef = useRef(null);
 
   const buddies = data.buddies || [];
   const favBuddies = buddies.filter(b => b.isFavorite);
+  const sessions = data.buddySessions || [];
+  const chatLogs = data.buddyChats || [];
 
   useEffect(() => {
     if (chatBoxRef.current) chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
@@ -140,6 +145,43 @@ export default function WanderingBuddy({ data, save }) {
     toggleFav(activeBuddy);
   };
 
+  const saveSession = () => {
+    if (candidates.length === 0) return;
+    const sess = {
+      id: 's_' + uid(),
+      topic: candidates[0]?.topicSeed || topic.trim(),
+      buddies: candidates,
+      createdAt: now(),
+    };
+    save({ ...data, buddySessions: [sess, ...sessions].slice(0, 30) });
+  };
+
+  const loadSession = (sess) => {
+    setCandidates(sess.buddies);
+    setTopic(sess.topic);
+    setErrMsg(null);
+  };
+
+  const deleteSession = (sid) => {
+    save({ ...data, buddySessions: sessions.filter(s => s.id !== sid) });
+  };
+
+  const openReplay = (chat) => {
+    setReplayChat(chat);
+    setTab(TAB.REPLAY);
+  };
+
+  const closeReplay = () => {
+    setReplayChat(null);
+    setTab(TAB.ROSTER);
+  };
+
+  const deleteChat = (cid) => {
+    save({ ...data, buddyChats: chatLogs.filter(c => c.id !== cid) });
+  };
+
+  const currentSessionSaved = candidates.length > 0 && sessions.some(s => s.buddies?.[0]?.id === candidates[0]?.id);
+
   const endChat = () => {
     if (messages.length > 0 && activeBuddy) {
       const chat = {
@@ -158,6 +200,41 @@ export default function WanderingBuddy({ data, save }) {
     save({ ...data, sparks: [...data.sparks, { ...sp, buddyName: activeBuddy?.name }] });
     setShowMemo(false);
   };
+
+  if (tab === TAB.REPLAY && replayChat) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#FDFBF8' }}>
+        <div style={{
+          padding: '12px 16px', borderBottom: `1px solid ${C.border}`,
+          display: 'flex', alignItems: 'center', gap: 12, background: '#fff',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>
+              📼 再生: {replayChat.buddyName}
+            </div>
+            <div style={{ fontSize: 13, color: C.sub }}>
+              {fmtD(replayChat.createdAt)}・お題: {replayChat.topicSeed}
+            </div>
+          </div>
+          <button style={{ ...S.txtBtn, fontSize: 14 }} onClick={closeReplay}>戻る</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {replayChat.messages.map((m, i) => (
+            <div key={i} style={{
+              alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+              maxWidth: '78%',
+              padding: '10px 14px',
+              borderRadius: m.role === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
+              background: m.role === 'user' ? C.accent + '20' : '#fff',
+              border: `1px solid ${m.role === 'user' ? C.accent + '40' : C.border}`,
+              fontSize: 15, lineHeight: 1.5, color: C.text,
+              whiteSpace: 'pre-wrap',
+            }}>{m.text}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (tab === TAB.CHAT && activeBuddy) {
     return (
@@ -270,7 +347,23 @@ export default function WanderingBuddy({ data, save }) {
 
         {candidates.length > 0 && (
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 12 }}>新しく呼ばれた3人</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>新しく呼ばれた3人</div>
+              <button
+                onClick={saveSession}
+                disabled={currentSessionSaved}
+                style={{
+                  background: currentSessionSaved ? C.bg2 : '#fff',
+                  border: `1px solid ${currentSessionSaved ? C.border : C.accent2}`,
+                  color: currentSessionSaved ? C.sub : C.accent2,
+                  padding: '6px 14px', borderRadius: 18, fontSize: 14,
+                  cursor: currentSessionSaved ? 'default' : 'pointer',
+                  fontFamily: 'inherit', fontWeight: 600,
+                }}
+              >
+                {currentSessionSaved ? '✓ 保存済み' : '💾 このセッションを保存'}
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
               {candidates.map(b => (
                 <BuddyCard
@@ -285,7 +378,7 @@ export default function WanderingBuddy({ data, save }) {
         )}
 
         {favBuddies.length > 0 && (
-          <div>
+          <div style={{ marginBottom: 24 }}>
             <button
               onClick={() => setShowFavs(!showFavs)}
               style={{ ...S.txtBtn, fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 12 }}
@@ -305,7 +398,91 @@ export default function WanderingBuddy({ data, save }) {
           </div>
         )}
 
-        {candidates.length === 0 && favBuddies.length === 0 && !loading && (
+        {sessions.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <button
+              onClick={() => setShowSessions(!showSessions)}
+              style={{ ...S.txtBtn, fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 12 }}
+            >
+              📂 保存したセッション（{sessions.length}）{showSessions ? '▼' : '▶'}
+            </button>
+            {showSessions && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {sessions.map(s => (
+                  <div key={s.id} style={{
+                    background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10,
+                    padding: 12, display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.topic}</div>
+                      <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
+                        {fmtD(s.createdAt)}・{s.buddies?.map(b => `${b.emoji || ''}${b.name}`).join(' / ')}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => loadSession(s)}
+                      style={{
+                        background: C.accent2, color: '#fff', border: 'none',
+                        padding: '6px 12px', borderRadius: 16, fontSize: 13, cursor: 'pointer',
+                        fontFamily: 'inherit', fontWeight: 600,
+                      }}
+                    >呼び出す</button>
+                    <button
+                      onClick={() => deleteSession(s.id)}
+                      style={{ ...S.iconBtn, fontSize: 16, color: C.sub }}
+                      title="削除"
+                    >🗑</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {chatLogs.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <button
+              onClick={() => setShowChats(!showChats)}
+              style={{ ...S.txtBtn, fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 12 }}
+            >
+              💬 過去の会話（{chatLogs.length}）{showChats ? '▼' : '▶'}
+            </button>
+            {showChats && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {chatLogs.map(c => (
+                  <div key={c.id} style={{
+                    background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10,
+                    padding: 12, display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {c.buddyName} と {c.messages?.length || 0} ターン
+                      </div>
+                      <div style={{ fontSize: 12, color: C.sub, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {fmtD(c.createdAt)}・お題: {c.topicSeed}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openReplay(c)}
+                      style={{
+                        background: '#fff', color: C.accent2, border: `1px solid ${C.accent2}`,
+                        padding: '6px 12px', borderRadius: 16, fontSize: 13, cursor: 'pointer',
+                        fontFamily: 'inherit', fontWeight: 600,
+                      }}
+                    >📼 再生</button>
+                    <button
+                      onClick={() => deleteChat(c.id)}
+                      style={{ ...S.iconBtn, fontSize: 16, color: C.sub }}
+                      title="削除"
+                    >🗑</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {candidates.length === 0 && favBuddies.length === 0 && sessions.length === 0 && !loading && (
           <div style={{ textAlign: 'center', color: C.sub, fontSize: 15, marginTop: 40, lineHeight: 1.8 }}>
             まだ誰もいません。<br />お題を入れて「3人呼ぶ」を押してみてください。
           </div>
