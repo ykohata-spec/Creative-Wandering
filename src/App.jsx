@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { C, S, MODES, TABS, SCENES, SIZES, WANDER, uid, pick, now, fmtD, fmtT, imgUrl } from './constants.js';
-import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getUnsplashKey, setUnsplashKey, getUserName, setUserName, getProfile, setProfile, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
-import { callGemini, CEN_SYS } from './gemini.js';
+import { loadData, saveData, emptyData, clearAllData, getApiKey, setApiKey, getOpenAIKey, setOpenAIKey, getProvider, setProvider, getUnsplashKey, setUnsplashKey, getUserName, setUserName, getProfile, setProfile, saveImage, getImage, deleteImage, resizeImage, exportAllData, importAllData } from './storage.js';
+import { CEN_SYS } from './gemini.js';
+import { callLLM } from './llm.js';
 import { memosToCSV, csvToMemos } from './csv.js';
 import CWMode from './CWMode.jsx';
 import MWTask from './MWTask.jsx';
@@ -56,14 +57,21 @@ function SuggestInput({ value, onChange, suggestions, placeholder, style: ext })
 
 /* ═══ Settings modal ═══ */
 function Settings({ onClose, onImport }) {
+  const [provider, setProv] = useState(getProvider());
   const [key, setKey] = useState(getApiKey());
+  const [oKey, setOKey] = useState(getOpenAIKey());
   const [unsKey, setUnsKey] = useState(getUnsplashKey());
   const [uName, setUName] = useState(getUserName());
   const [prof, setProf] = useState(getProfile());
   const [importing, setImporting] = useState(false);
   const [msg, setMsg] = useState(null);
   const impRef = useRef(null);
-  const save = () => { setApiKey(key); setUnsplashKey(unsKey); setUserName(uName); setProfile(prof); onClose(); };
+  const save = () => {
+    setProvider(provider);
+    setApiKey(key); setOpenAIKey(oKey);
+    setUnsplashKey(unsKey); setUserName(uName); setProfile(prof);
+    onClose();
+  };
 
   const doExport = async () => {
     const json = await exportAllData();
@@ -97,24 +105,60 @@ function Settings({ onClose, onImport }) {
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '0 auto 16px' }} />
         <h3 style={{ ...S.sec, marginBottom: 16 }}>⚙ 設定</h3>
 
-        <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 12 }}>
-          Gemini APIキーを設定してください。<br />
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: C.link }}>Google AI Studio</a> で無料取得できます（Googleアカウントのみ）。
+        <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 8 }}>
+          使用するAIプロバイダ
         </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {[
+            { id: 'gemini', label: 'Gemini' },
+            { id: 'openai', label: 'OpenAI (GPT-4.1-mini)' },
+          ].map(p => (
+            <button
+              key={p.id}
+              onClick={() => setProv(p.id)}
+              style={{
+                flex: 1, padding: '10px 8px', border: `1.5px solid ${provider === p.id ? C.accent2 : C.border}`,
+                background: provider === p.id ? C.accent2 + '15' : '#fff',
+                color: provider === p.id ? C.accent2 : C.sub,
+                fontSize: 14, fontWeight: provider === p.id ? 700 : 500,
+                borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >{p.label}</button>
+          ))}
+        </div>
 
-        <input
-          type="password"
-          style={S.inp}
-          placeholder="AIza..."
-          value={key}
-          onChange={e => setKey(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && save()}
-        />
-        {key && (
-          <p style={{ fontSize: 14, color: C.sub, marginBottom: 8 }}>
-            ※ このキーはあなたのブラウザにのみ保存されます。
-          </p>
+        {provider === 'gemini' ? (
+          <>
+            <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, marginBottom: 8 }}>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: C.link }}>Google AI Studio</a> で無料取得できます。
+            </p>
+            <input
+              type="password"
+              style={S.inp}
+              placeholder="AIza..."
+              value={key}
+              onChange={e => setKey(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && save()}
+            />
+          </>
+        ) : (
+          <>
+            <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, marginBottom: 8 }}>
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={{ color: C.link }}>OpenAI Platform</a> で取得（有料、要支払い設定）。
+            </p>
+            <input
+              type="password"
+              style={S.inp}
+              placeholder="sk-..."
+              value={oKey}
+              onChange={e => setOKey(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && save()}
+            />
+          </>
         )}
+        <p style={{ fontSize: 14, color: C.sub, marginBottom: 8 }}>
+          ※ キーはあなたのブラウザにのみ保存されます。
+        </p>
 
         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 16, paddingTop: 16 }}>
           <p style={{ fontSize: 16, color: C.textLight, lineHeight: 1.7, marginBottom: 8 }}>
@@ -645,7 +689,7 @@ function ChatTab({ data, save }) {
       const pc = data.projects.length > 0
         ? '\n\n【お題】\n' + data.projects.slice(-3).map(p => `- ${p.title}: ${p.brief || ''}`).join('\n')
         : '';
-      ai = await callGemini(getApiKey(), CEN_SYS, inp.trim() + mc + pc);
+      ai = await callLLM(CEN_SYS, inp.trim() + mc + pc);
     }
     const am = { role: 'ai', text: ai, time: now() };
     const fm = [...nm, am];
@@ -1057,7 +1101,7 @@ export default function App() {
   const { data, save } = useData();
   const [mode,          setMode]         = useState(MODES.CEN);
   const [showSettings,  setShowSettings] = useState(() => {
-    if (getApiKey()) return false;
+    if (getApiKey() || getOpenAIKey()) return false;
     if (localStorage.getItem('cw-settings-seen')) return false;
     localStorage.setItem('cw-settings-seen', '1');
     return true;

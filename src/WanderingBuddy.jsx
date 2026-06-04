@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { getApiKey, getUserName, getProfile } from './storage.js';
+import { getUserName, getProfile } from './storage.js';
 import { generateBuddies, chatWithBuddy } from './buddy.js';
 import QuickMemo from './QuickMemo.jsx';
 
@@ -73,6 +73,7 @@ export default function WanderingBuddy({ data, save }) {
   const [showSessions, setShowSessions] = useState(true);
   const [showChats, setShowChats] = useState(true);
   const [replayChat, setReplayChat] = useState(null);
+  const [chatId, setChatId] = useState(null);
   const chatBoxRef = useRef(null);
 
   const buddies = data.buddies || [];
@@ -89,9 +90,8 @@ export default function WanderingBuddy({ data, save }) {
     setLoading(true);
     setCandidates([]);
     setErrMsg(null);
-    const apiKey = getApiKey();
     const profile = getProfile();
-    const result = await generateBuddies(apiKey, topic.trim(), profile);
+    const result = await generateBuddies(topic.trim(), profile);
     if (result.error) {
       setErrMsg(result.error);
     } else {
@@ -114,16 +114,32 @@ export default function WanderingBuddy({ data, save }) {
   const startChat = (buddy) => {
     setActiveBuddy(buddy);
     setMessages([]);
+    setChatId('c_' + uid());
     setTab(TAB.CHAT);
     setTimeout(async () => {
       setSending(true);
-      const apiKey = getApiKey();
       const userName = getUserName();
-      const opener = await chatWithBuddy(apiKey, buddy, [], '(雑談を始める。挨拶代わりに、最近の自分の生活の断片を1つだけ話して、軽く相手に「最近どう？」みたいに振ってください。短く。)', userName);
+      const opener = await chatWithBuddy(buddy, [], '(雑談を始める。挨拶代わりに、最近の自分の生活の断片を1つだけ話して、軽く相手に「最近どう？」みたいに振ってください。短く。)', userName);
       setMessages([{ role: 'buddy', text: opener, ts: now() }]);
       setSending(false);
     }, 100);
   };
+
+  // リアルタイム自動保存
+  useEffect(() => {
+    if (!chatId || !activeBuddy || messages.length === 0) return;
+    const existing = (data.buddyChats || []).find(c => c.id === chatId);
+    const entry = {
+      id: chatId,
+      buddyId: activeBuddy.id, buddyName: activeBuddy.name,
+      topicSeed: activeBuddy.topicSeed, messages,
+      createdAt: existing?.createdAt || messages[0]?.ts || now(),
+      updatedAt: now(),
+    };
+    const rest = (data.buddyChats || []).filter(c => c.id !== chatId);
+    save({ ...data, buddyChats: [entry, ...rest].slice(0, 50) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, chatId]);
 
   const send = async () => {
     const text = input.trim();
@@ -132,9 +148,8 @@ export default function WanderingBuddy({ data, save }) {
     const next = [...messages, { role: 'user', text, ts: now() }];
     setMessages(next);
     setSending(true);
-    const apiKey = getApiKey();
     const userName = getUserName();
-    const reply = await chatWithBuddy(apiKey, activeBuddy, next, text, userName);
+    const reply = await chatWithBuddy(activeBuddy, next, text, userName);
     setMessages([...next, { role: 'buddy', text: reply, ts: now() }]);
     setSending(false);
   };
@@ -183,16 +198,10 @@ export default function WanderingBuddy({ data, save }) {
   const currentSessionSaved = candidates.length > 0 && sessions.some(s => s.buddies?.[0]?.id === candidates[0]?.id);
 
   const endChat = () => {
-    if (messages.length > 0 && activeBuddy) {
-      const chat = {
-        id: 'c_' + uid(), buddyId: activeBuddy.id, buddyName: activeBuddy.name,
-        topicSeed: activeBuddy.topicSeed, messages,
-        createdAt: messages[0]?.ts, endedAt: now(),
-      };
-      save({ ...data, buddyChats: [chat, ...(data.buddyChats || [])].slice(0, 50) });
-    }
+    // 自動保存済みなので state クリアのみ
     setActiveBuddy(null);
     setMessages([]);
+    setChatId(null);
     setTab(TAB.ROSTER);
   };
 
@@ -250,7 +259,10 @@ export default function WanderingBuddy({ data, save }) {
           }}>{activeBuddy.emoji || '👤'}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{activeBuddy.name}</div>
-            <div style={{ fontSize: 13, color: C.sub }}>{activeBuddy.occupation}</div>
+            <div style={{ fontSize: 12, color: C.sub }}>
+              {activeBuddy.occupation}
+              {messages.length > 0 && <span style={{ marginLeft: 8, color: '#22C55E' }}>● 自動保存中</span>}
+            </div>
           </div>
           <button
             onClick={toggleActiveFav}

@@ -6,6 +6,8 @@ const LS = {
   chat:         'cw-chat-v4',
   cwHist:       'cw-cwhist-v4',
   apiKey:       'cw-gemini-key',
+  openaiKey:    'cw-openai-key',
+  provider:     'cw-llm-provider',
   unsplashKey:  'cw-unsplash-key',
   buddies:        'cw-buddies-v1',
   buddyChats:     'cw-buddychats-v1',
@@ -16,6 +18,12 @@ const LS = {
 
 export const getApiKey = ()  => localStorage.getItem(LS.apiKey) || '';
 export const setApiKey = (k) => localStorage.setItem(LS.apiKey, k.trim());
+
+export const getOpenAIKey = ()  => localStorage.getItem(LS.openaiKey) || '';
+export const setOpenAIKey = (k) => localStorage.setItem(LS.openaiKey, k.trim());
+
+export const getProvider = ()  => localStorage.getItem(LS.provider) || 'gemini';
+export const setProvider = (p) => localStorage.setItem(LS.provider, p);
 
 export const getUnsplashKey = ()  => localStorage.getItem(LS.unsplashKey) || '';
 export const setUnsplashKey = (k) => localStorage.setItem(LS.unsplashKey, k.trim());

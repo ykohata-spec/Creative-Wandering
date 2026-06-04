@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { C, S, uid, now, fmtD } from './constants.js';
-import { callGemini, CW_MEMO_SYS, CW_STIM_SYS, withProfile } from './gemini.js';
-import { getApiKey, getUnsplashKey, getProfile, getImage } from './storage.js';
+import { CW_MEMO_SYS, CW_STIM_SYS, withProfile } from './gemini.js';
+import { callLLM } from './llm.js';
+import { getUnsplashKey, getProfile, getImage } from './storage.js';
 import { fetchImagesForTopic } from './unsplash.js';
 import QuickMemo from './QuickMemo.jsx';
 import WanderingBuddy from './WanderingBuddy.jsx';
@@ -113,9 +114,9 @@ export default function CWMode({ data, save }) {
   /* ── 生成（2回のAPI呼び出しで全プール生成） ── */
   const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
-  const callWithRetry = async (apiKey, sys, msg, label) => {
+  const callWithRetry = async (sys, msg, label) => {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const res = await callGemini(apiKey, sys, msg, true, true);
+      const res = await callLLM(sys, msg, true, true);
       const trimmed = typeof res === 'string' ? res.trim() : '';
       if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) {
         console.warn(`CW API [${label}] attempt ${attempt + 1} failed:`, res?.substring?.(0, 200));
@@ -134,7 +135,6 @@ export default function CWMode({ data, save }) {
     setSizes({});
     setPan({ x: 0, y: 0 });
 
-    const apiKey = getApiKey();
     const memoCtx = data.memos.length > 0
       ? '\n\nメモ箱:\n' + data.memos.map(m => `[${m.tag || ''}] ${m.title || ''}: ${m.content}`).join('\n')
       : '\n\nメモ箱: (空)';
@@ -143,11 +143,11 @@ export default function CWMode({ data, save }) {
 
     try {
       setLoadMsg('メモを解析中…(1/2)');
-      const r1 = await callWithRetry(apiKey, withProfile(CW_MEMO_SYS, profile), 'お題: ' + topic + '\n' + memoCtx, 'memo');
+      const r1 = await callWithRetry(withProfile(CW_MEMO_SYS, profile), 'お題: ' + topic + '\n' + memoCtx, 'memo');
 
       await delay(2000);
       setLoadMsg('3距離の刺激を一括生成中…(2/2)');
-      const r2 = await callWithRetry(apiKey, withProfile(CW_STIM_SYS, profile), 'お題: ' + topic, 'stim');
+      const r2 = await callWithRetry(withProfile(CW_STIM_SYS, profile), 'お題: ' + topic, 'stim');
 
       setLoadMsg('空間を構築中…');
 
@@ -187,7 +187,7 @@ export default function CWMode({ data, save }) {
       if (unsKey) {
         setLoadMsg('画像を検索中…');
         try {
-          const { images } = await fetchImagesForTopic(apiKey, unsKey, topic);
+          const { images } = await fetchImagesForTopic(unsKey, topic);
           unsplashNodes = images.map((p, i) => ({
             id: 'unsp_' + i, group: 5, thumb: p.thumb, full: p.full,
             alt: p.alt, query: p.query, text: p.query,
@@ -216,7 +216,7 @@ export default function CWMode({ data, save }) {
         unsplash: unsplashNodes.map(n => ({ id: n.id, thumb: n.thumb, full: n.full, alt: n.alt, query: n.query, text: n.text })),
         createdAt: now(),
       };
-      save({ ...data, cwHistory: [entry, ...history].slice(0, 10) });
+      save({ ...data, cwHistory: [entry, ...history].slice(0, 50) });
     } catch (e) {
       console.error('CW gen error:', e);
       setMemoNodes([{ id: uid(), text: '生成失敗。再試行してください。', group: 1, _anim: 0, _dur: 15, _delay: 0 }]);
