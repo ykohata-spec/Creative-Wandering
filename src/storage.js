@@ -12,6 +12,7 @@ const LS = {
   buddies:        'cw-buddies-v1',
   buddyChats:     'cw-buddychats-v1',
   buddySessions:  'cw-buddysess-v1',
+  cenSessions:    'cw-censess-v1',
   userName:       'cw-user-name',
   profile:        'cw-profile-v1',
 };
@@ -44,6 +45,7 @@ export const emptyData = () => ({
   buddies:       [],
   buddyChats:    [],
   buddySessions: [],
+  cenSessions:   [],
 });
 
 export function loadData() {
@@ -59,6 +61,7 @@ export function loadData() {
   try { const v = localStorage.getItem(LS.buddies);       if (v) d.buddies       = JSON.parse(v); } catch {}
   try { const v = localStorage.getItem(LS.buddyChats);    if (v) d.buddyChats    = JSON.parse(v); } catch {}
   try { const v = localStorage.getItem(LS.buddySessions); if (v) d.buddySessions = JSON.parse(v); } catch {}
+  try { const v = localStorage.getItem(LS.cenSessions);   if (v) d.cenSessions   = JSON.parse(v); } catch {}
   return d;
 }
 
@@ -71,6 +74,7 @@ export function saveData(d) {
   try { localStorage.setItem(LS.buddies,       JSON.stringify(d.buddies       || [])); } catch {}
   try { localStorage.setItem(LS.buddyChats,    JSON.stringify(d.buddyChats    || [])); } catch {}
   try { localStorage.setItem(LS.buddySessions, JSON.stringify(d.buddySessions || [])); } catch {}
+  try { localStorage.setItem(LS.cenSessions,   JSON.stringify(d.cenSessions   || [])); } catch {}
 }
 
 export function clearAllData() {

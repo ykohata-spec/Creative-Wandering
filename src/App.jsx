@@ -669,7 +669,7 @@ function ChatTab({ data, save }) {
   const [rally, sRally] = useState(data.rallyCount  || 0);
   const [loading, sL]   = useState(false);
   const ref   = useRef(null);
-  const LIMIT = 6;
+  const LIMIT = 15;
 
   useEffect(() => { ref.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
 
@@ -699,6 +699,33 @@ function ChatTab({ data, save }) {
 
   const reset = () => { sMsgs([]); sRally(0); save({ ...data, chatHistory: [], rallyCount: 0 }); };
 
+  const sessions = data.cenSessions || [];
+
+  const saveSession = () => {
+    if (msgs.length === 0) return;
+    const firstUser = msgs.find(m => m.role === 'user');
+    const title = firstUser?.text?.substring(0, 30) || '(無題)';
+    const sess = {
+      id: 'cen_' + uid(),
+      title,
+      messages: msgs,
+      createdAt: msgs[0]?.time || now(),
+      savedAt: now(),
+    };
+    save({ ...data, cenSessions: [sess, ...sessions].slice(0, 50) });
+    sMsgs([]); sRally(0);
+    save({ ...data, chatHistory: [], rallyCount: 0, cenSessions: [sess, ...sessions].slice(0, 50) });
+  };
+
+  const loadSession = (sess) => {
+    sMsgs(sess.messages);
+    sRally(sess.messages.filter(m => m.role === 'user').length);
+  };
+
+  const deleteSession = (sid) => {
+    save({ ...data, cenSessions: sessions.filter(s => s.id !== sid) });
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -709,15 +736,50 @@ function ChatTab({ data, save }) {
               <div key={i} style={{ width: 16, height: 4, borderRadius: 2, background: i < rally ? C.accent : C.border }} />
             ))}
           </div>
+          {msgs.length > 0 && (
+            <button
+              style={{ ...S.txtBtn, color: C.accent2, fontWeight: 600 }}
+              onClick={saveSession}
+              title="現在の会話を保存して新しく始める"
+            >💾 保存</button>
+          )}
           <button style={S.txtBtn} onClick={reset}>リセット</button>
         </div>
       </div>
 
       <div style={S.chatBox}>
         {msgs.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: C.sub }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🤝</div>
-            <p style={{ fontSize: 16, lineHeight: 1.7 }}>考えていることを話してください。</p>
+          <div style={{ padding: '24px 16px' }}>
+            <div style={{ textAlign: 'center', color: C.sub, marginBottom: 20 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🤝</div>
+              <p style={{ fontSize: 16, lineHeight: 1.7 }}>考えていることを話してください。</p>
+            </div>
+            {sessions.length > 0 && (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+                  📂 保存した会話（{sessions.length}）
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {sessions.map(s => (
+                    <div key={s.id} style={{
+                      background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8,
+                      padding: 10, display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => loadSession(s)}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {s.title}
+                        </div>
+                        <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
+                          {fmtD(s.savedAt)}・{s.messages?.length || 0} メッセージ
+                        </div>
+                      </div>
+                      <button onClick={() => loadSession(s)} style={{ ...S.txtBtn, fontSize: 13, color: C.accent2 }}>開く</button>
+                      <button onClick={() => deleteSession(s.id)} style={{ ...S.iconBtn, fontSize: 16, color: C.sub }} title="削除">🗑</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         {msgs.map((m, i) => (
@@ -740,7 +802,13 @@ function ChatTab({ data, save }) {
           placeholder="考えていることを入力..."
           value={inp}
           onChange={e => sInp(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+          onKeyDown={e => {
+            if (e.key !== 'Enter') return;
+            if (e.shiftKey) return;
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+            e.preventDefault();
+            send();
+          }}
         />
         <button style={{ ...S.pri, width: 'auto', padding: '0 20px', margin: 0 }} onClick={send}>送信</button>
       </div>
